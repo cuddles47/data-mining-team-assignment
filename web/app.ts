@@ -1,4 +1,4 @@
-import { Apriori, IAprioriResults } from "../src/aprori";
+import { Apriori, IAprioriResults } from "../src/apriori";
 document.addEventListener('DOMContentLoaded', () => {
     const transactionsTextarea = document.getElementById('transactions') as HTMLTextAreaElement;
     const supportInput = document.getElementById('support') as HTMLInputElement;
