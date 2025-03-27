@@ -1,17 +1,44 @@
 {
   "name": "data-mining-team-assignment",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Apriori algorithm web interface",
+  "main": "dist/web/app.js",
+  "types": "dist/apriori.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "webpack --mode production",
+    "start": "webpack serve --open --mode development",
+    "test": "npm run tsc && node examples/example.js",
+    "tsc": "npx tsc"
   },
-  "keywords": [],
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexisfacques/Node-Apriori.git"
+  },
+  "keywords": [
+    "apriori",
+    "algorithm",
+    "frequent",
+    "data",
+    "itemset",
+    "mining",
+    "association",
+    "rules",
+    "data mining"
+  ],
+  "author": "Kewwi <binbill472003@gmail.com>",
   "license": "ISC",
-  "description": "",
+  "bugs": {
+    "url": "https://github.com/cuddles47/data-mining-team-assignment/issues"
+  },
+  "homepage": "https://github.com/cuddles47/data-mining-team-assignment#readme",
   "devDependencies": {
-    "@types/node": "^22.13.13",
-    "typescript": "^5.8.2"
+    "@types/node": "^12.12.0",
+    "ts-loader": "^9.4.4",
+    "typescript": "^5.1.6",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1",
+    "copy-webpack-plugin": "^11.0.0"
   },
   "dependencies": {
     "events": "^3.3.0"
