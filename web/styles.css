@@ -73,3 +73,31 @@ button:hover {
     margin-top: 15px;
     font-weight: bold;
 }
+
+.itemset-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    border: 2px solid #ddd;
+}
+
+.itemset-table th, 
+.itemset-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center; 
+}
+
+.itemset-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+    border-bottom: 2px solid #ddd;
+}
+
+.itemset-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.itemset-table tr:hover {
+    background-color: #f1f1f1;
+}
