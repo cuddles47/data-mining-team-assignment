@@ -1,0 +1,11 @@
+TransactionID,Items
+1,"Bread,Milk,Eggs"
+2,"Bread,Diapers,Beer"
+3,"Milk,Diapers,Beer,Eggs"
+4,"Bread,Milk,Diapers,Beer"
+5,"Bread,Milk,Diapers,Eggs"
+6,"Milk,Eggs"
+7,"Bread,Milk,Beer"
+8,"Bread,Diapers,Eggs"
+9,"Milk,Diapers"
+10,"Bread,Milk,Diapers,Beer,Eggs"
