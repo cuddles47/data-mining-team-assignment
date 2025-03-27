@@ -4,8 +4,100 @@ document.addEventListener('DOMContentLoaded', () => {
     const supportInput = document.getElementById('support') as HTMLInputElement;
     const minConfidenceInput = document.getElementById('min-confidence') as HTMLInputElement; // Add reference to min confidence input
     const executeButton = document.getElementById('execute-btn') as HTMLButtonElement;
+    const importButton = document.getElementById('import-btn') as HTMLButtonElement;
     const frequentItemsetsDiv = document.getElementById('frequent-itemsets') as HTMLDivElement;
     const executionStatsDiv = document.getElementById('execution-stats') as HTMLDivElement;
+   
+    
+    importButton.addEventListener('click', () => {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.csv, .tsv, .txt';
+    
+        fileInput.addEventListener('change', (event) => {
+            const file = (event.target as HTMLInputElement).files?.[0];
+            if (!file) return;
+    
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                let content = e.target?.result as string;
+                if (!content) {
+                    alert('File is empty or cannot be read.');
+                    return;
+                }
+    
+                // Loại bỏ BOM nếu có (UTF-8 BOM)
+                if (content.charCodeAt(0) === 0xFEFF) {
+                    content = content.slice(1);
+                }
+    
+                // Xác định dấu phân cách CSV
+                const firstLine = content.split('\n')[0];
+                let delimiter = detectDelimiter(firstLine);
+    
+                // Chuyển đổi CSV thành mảng các giao dịch
+                const lines = content
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line);
+    
+                if (lines.length <= 1) {
+                    alert('Invalid CSV format');
+                    return;
+                }
+    
+                // Lấy dòng tiêu đề
+                const headers = parseCSVLine(lines[0], delimiter);
+                if (headers.length < 2) {
+                    alert('CSV must have at least two columns');
+                    return;
+                }
+    
+                // Xử lý dữ liệu, bỏ TransactionID
+                const transactions = lines
+                    .slice(1) // Bỏ dòng tiêu đề
+                    .map(line => {
+                        const columns = parseCSVLine(line, delimiter);
+                        return columns.slice(1).join(','); // Bỏ cột đầu tiên
+                    });
+    
+                transactionsTextarea.value = transactions.join('\n');
+            };
+    
+            reader.onerror = () => alert('Error reading file.');
+            reader.readAsText(file);
+        });
+    
+        fileInput.click();
+    });
+    
+    /**
+     * Xác định dấu phân cách CSV (`,`, `;`, `\t`)
+     */
+    function detectDelimiter(sampleLine: string): string {
+        const delimiters = [',', ';', '\t'];
+        let detected = ',';
+        let maxCount = 0;
+    
+        delimiters.forEach(delimiter => {
+            const count = sampleLine.split(delimiter).length;
+            if (count > maxCount) {
+                maxCount = count;
+                detected = delimiter;
+            }
+        });
+    
+        return detected;
+    }
+    
+    /**
+     * Tách dòng CSV, hỗ trợ dấu `"`
+     */
+    function parseCSVLine(line: string, delimiter: string): string[] {
+        const regex = new RegExp(`\\s*${delimiter}\\s*(?=(?:[^"]*"[^"]*")*[^"]*$)`);
+        return line.split(regex).map(cell => cell.replace(/^"|"$/g, '').trim());
+    }
+    
 
     const resetTextareaButton = document.getElementById('reset-textarea-btn') as HTMLButtonElement; // Tham chiếu đến nút Reset Textarea
 
