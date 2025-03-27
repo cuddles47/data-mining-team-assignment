@@ -99,6 +99,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
 
+    const resetTextareaButton = document.getElementById('reset-textarea-btn') as HTMLButtonElement; // Tham chiếu đến nút Reset Textarea
+
+    // Sự kiện cho nút Reset Textarea
+        resetTextareaButton.addEventListener('click', () => {
+            // Xóa nội dung trong textarea
+            transactionsTextarea.value = '';
+            supportInput.value = '0.5'; // trả về giá trị mặc định = 0.5
+            minConfidenceInput.value = '0.5'; // trả về giá trị mặ định = 0.5
+            //xóa nội dùng hiển thị kết quả 
+            frequentItemsetsDiv.innerHTML = '';// xóa nội dung hiển thị kết quả tập mục phổ biếnbiến
+            executionStatsDiv.innerHTML = '';// xóa nội dung hiển thị kết quả thống kê
+        });
     executeButton.addEventListener('click', () => {
         const transactionsText = transactionsTextarea.value.trim();
         if (!transactionsText) {
