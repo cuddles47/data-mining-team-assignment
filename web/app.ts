@@ -31,28 +31,23 @@ document.addEventListener('DOMContentLoaded', () => {
             .filter(line => line) 
             .map(line => line.split(',').map(item => item.trim()));
 
-        frequentItemsetsDiv.innerHTML = '<h3>Danh sách Tập phổ biến:</h3>';
+        // Chỉ xóa nội dung hiện tại và chưa thêm tiêu đề
+        frequentItemsetsDiv.innerHTML = '';
         executionStatsDiv.innerHTML = '';
-        
+
         const frequentItemsets: Array<{items: string[], support: number}> = [];
 
         const apriori = new Apriori<string>(support);
+        // Chỉ thu thập itemsets, không hiển thị ngay lập tức
         apriori.on('data', (itemset) => {
             frequentItemsets.push(itemset);
-            
-            const itemsetDiv = document.createElement('div');
-            itemsetDiv.className = 'itemset';
-            itemsetDiv.innerHTML = `{ itemset: ['${itemset.items.join("', '")}'], support: ${itemset.support.toFixed(4)} }`;
-            frequentItemsetsDiv.appendChild(document.createElement('br'));
-            frequentItemsetsDiv.appendChild(itemsetDiv);
-            frequentItemsetsDiv.appendChild(document.createElement('br'));
         });
 
         apriori.exec(transactions)
             .then((result: IAprioriResults<string>) => {
                 executionStatsDiv.textContent = `Finished executing Apriori. ${result.itemsets.length} frequent itemsets were found in ${result.executionTime}ms.`;
                 
-                // Thêm bảng hiển thị items, support count và support %
+                // 1. Trước tiên, hiển thị bảng tần suất các mục
                 const tableDiv = document.createElement('div');
                 tableDiv.className = 'support-table';
                 tableDiv.innerHTML = '<h3>Bảng Tần suất các Mục:</h3>';
@@ -60,6 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Tạo bảng HTML
                 const table = document.createElement('table');
                 table.className = 'itemset-table';
+                // Thêm style trực tiếp cho bảng
+                table.style.width = '100%';
+                table.style.borderCollapse = 'collapse';
+                table.style.margin = '20px 0';
+                table.style.border = '2px solid #ddd';
                 
                 // Tạo header cho bảng
                 const thead = document.createElement('thead');
@@ -67,6 +67,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 ['Tập mục', 'Support Count', 'Support %'].forEach(headerText => {
                     const th = document.createElement('th');
                     th.textContent = headerText;
+                    // Thêm style cho header cells
+                    th.style.border = '1px solid #ddd';
+                    th.style.padding = '10px';
+                    th.style.textAlign = 'center';
+                    th.style.backgroundColor = '#f2f2f2';
+                    th.style.fontWeight = 'bold';
+                    th.style.borderBottom = '2px solid #ddd';
                     headerRow.appendChild(th);
                 });
                 thead.appendChild(headerRow);
@@ -92,17 +99,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Cột Item
                     const itemCell = document.createElement('td');
                     itemCell.textContent = `{${itemset.items.join(', ')}}`;
+                    // Thêm style cho cell
+                    itemCell.style.border = '1px solid #ddd';
+                    itemCell.style.padding = '10px';
+                    itemCell.style.textAlign = 'center';
                     row.appendChild(itemCell);
                     
                     // Cột Support Count
                     const supportCountCell = document.createElement('td');
                     supportCountCell.textContent = itemset.support.toString();
+                    // Thêm style cho cell
+                    supportCountCell.style.border = '1px solid #ddd';
+                    supportCountCell.style.padding = '10px';
+                    supportCountCell.style.textAlign = 'center';
                     row.appendChild(supportCountCell);
                     
                     // Cột Support %
                     const supportPercentCell = document.createElement('td');
                     const supportPercent = (itemset.support / transactions.length * 100).toFixed(2);
                     supportPercentCell.textContent = `${supportPercent}%`;
+                    // Thêm style cho cell
+                    supportPercentCell.style.border = '1px solid #ddd';
+                    supportPercentCell.style.padding = '10px';
+                    supportPercentCell.style.textAlign = 'center';
                     row.appendChild(supportPercentCell);
                     
                     tbody.appendChild(row);
@@ -114,7 +133,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Thêm bảng vào trang
                 frequentItemsetsDiv.appendChild(tableDiv);
                 
-                // Generate and display association rules
+                // // 2. Sau đó hiển thị danh sách tập phổ biến
+                // const frequentItemsetsListDiv = document.createElement('div');
+                // frequentItemsetsListDiv.innerHTML = '<h3>Danh sách Tập phổ biến:</h3>';
+                
+                // // Hiển thị từng itemset
+                // frequentItemsets.forEach(itemset => {
+                //     const itemsetDiv = document.createElement('div');
+                //     itemsetDiv.className = 'itemset';
+                //     itemsetDiv.innerHTML = `{ itemset: ['${itemset.items.join("', '")}'], support: ${itemset.support.toFixed(4)} }`;
+                //     frequentItemsetsListDiv.appendChild(document.createElement('br'));
+                //     frequentItemsetsListDiv.appendChild(itemsetDiv);
+                //     frequentItemsetsListDiv.appendChild(document.createElement('br'));
+                // });
+                
+                // frequentItemsetsDiv.appendChild(frequentItemsetsListDiv);
+                
+                // 3. Cuối cùng hiển thị luật kết hợp
                 const rulesDiv = document.createElement('div');
                 rulesDiv.innerHTML = '<h3>Luật kết hợp:</h3>';
                 
