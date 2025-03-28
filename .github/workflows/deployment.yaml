@@ -6,8 +6,19 @@ on:
       - main  
   workflow_dispatch:  
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -23,14 +34,23 @@ jobs:
         run: npm ci || npm install
 
       - name: Build project 
-        run: |
-          npm run build
-          # Create a .nojekyll file to prevent GitHub Pages from ignoring files that begin with an underscore
-          touch ./dist/.nojekyll || mkdir -p dist && touch ./dist/.nojekyll
+        run: npm run build
 
-      - name: Deploy to GitHub Pages 🚀
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
         with:
-          folder: dist  
-          branch: gh-pages
-          clean: true
+          path: './dist'  # Adjust this to your build output folder
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
