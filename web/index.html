@@ -3,39 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apriori Algorithm</title>
+    <title>Data Mining Algorithms</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>Apriori Algorithm</h1>
+        <h1>Data Mining Algorithms</h1>
         
-        <div class="input-section">
-            <h2>Input Transactions</h2>
-            <p>Enter each transaction on a new line. Items within a transaction should be separated by commas.</p>
-            <textarea id="transactions" rows="10"></textarea>
-            
+        <div class="algorithm-selection">
             <div class="form-group">
-                <label for="support">Minimum Support (0-1):</label>
-                <input type="number" id="support" min="0" max="1" step="0.1" value="0.5">
+                <label for="algorithm-select">Select Algorithm:</label>
+                <select id="algorithm-select">
+                    <option value="apriori">Apriori Algorithm</option>
+                    <option value="kmeans">K-means Clustering</option>
+                </select>
             </div>
-
-            <div class="form-group">
-                <label for="min-confidence">Minimum Confidence (0-1):</label>
-                <input type="number" id="min-confidence" min="0" max="1" step="0.1" value="0.5">
-            </div>
-            
-            <button id="execute-btn">Execute Apriori</button>
-            <button id="execute-fp-btn">Execute FPGrowth</button>
-            <button id="import-btn">Import File</button>
         </div>
         
+        <div class="input-section">
+            <h2 id="input-title">Input Transactions</h2>
+            <p id="input-description">Enter each transaction on a new line. Items within a transaction should be separated by commas.</p>
+            <textarea id="transactions" rows="10"></textarea>
+            
+            <div id="apriori-params">
+                <div class="form-group">
+                    <label for="support">Minimum Support (0-1):</label>
+                    <input type="number" id="support" min="0" max="1" step="0.1" value="0.5">
+                </div>
+
+                <div class="form-group">
+                    <label for="min-confidence">Minimum Confidence (0-1):</label>
+                    <input type="number" id="min-confidence" min="0" max="1" step="0.1" value="0.5">
+                </div>
+            </div>
+            
+            <div id="kmeans-params" style="display:none;">
+                <div class="form-group">
+                    <label for="k-clusters">Number of Clusters (K):</label>
+                    <input type="number" id="k-clusters" min="2" value="3">
+                </div>
+                
+                <div class="form-group">
+                    <label for="max-iterations">Max Iterations:</label>
+                    <input type="number" id="max-iterations" min="1" value="100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="use-kmeans-pp">
+                        <input type="checkbox" id="use-kmeans-pp" checked>
+                        Use K-means++ Initialization
+                    </label>
+                </div>
+            </div>
+            
+            <button id="execute-btn">Execute</button>
+            <button id="reset-textarea-btn">Reset</button>
+            <button id="import-btn">Import File</button>
+        </div>
         
         <div class="results-section">
             <h2>Results</h2>
             <div id="results-container">
                 <div id="frequent-itemsets"></div>
                 <div id="execution-stats"></div>
+            </div>
+            
+            <div id="visualization-container" style="display:none;">
+                <h3>Cluster Visualization</h3>
+                <div>
+                    <label for="x-axis">X-Axis:</label>
+                    <select id="x-axis"></select>
+                    
+                    <label for="y-axis">Y-Axis:</label>
+                    <select id="y-axis"></select>
+                </div>
+                <canvas id="cluster-canvas" width="800" height="500"></canvas>
             </div>
         </div>
     </div>

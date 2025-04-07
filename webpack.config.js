@@ -1,5 +1,5 @@
 const path = require('path');
-const CopyPlugin = require('copy-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   entry: './web/app.ts',
@@ -14,25 +14,30 @@ module.exports = {
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
-    fallback: {
-      "events": require.resolve("events/")
-    }
   },
   output: {
     filename: 'app.js',
-    path: path.resolve(__dirname, 'dist/web'),
+    path: path.resolve(__dirname, 'dist'),
   },
   plugins: [
-    new CopyPlugin({
+    new CopyWebpackPlugin({
       patterns: [
-        { from: "web/index.html", to: "" },
-        { from: "web/styles.css", to: "" },
+        { 
+          from: './web/index.html', 
+          to: 'index.html' 
+        },
+        // Copy any CSS files if they exist
+        { 
+          from: './web/*.css', 
+          to: '[name][ext]',
+          noErrorOnMissing: true 
+        }
       ],
     }),
   ],
   devServer: {
     static: {
-      directory: path.join(__dirname, 'dist/web'),
+      directory: path.join(__dirname, 'dist'),
     },
     compress: true,
     port: 9000,
