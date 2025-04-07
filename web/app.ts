@@ -1,23 +1,150 @@
 import { Apriori, IAprioriResults } from "../src/apriori";
+import { fpgrowth } from "../src/fpGrowth";
+
 document.addEventListener('DOMContentLoaded', () => {
     const transactionsTextarea = document.getElementById('transactions') as HTMLTextAreaElement;
     const supportInput = document.getElementById('support') as HTMLInputElement;
     const minConfidenceInput = document.getElementById('min-confidence') as HTMLInputElement; // Add reference to min confidence input
     const executeButton = document.getElementById('execute-btn') as HTMLButtonElement;
     const importButton = document.getElementById('import-btn') as HTMLButtonElement;
+    const executeFPGrowthButton = document.getElementById('execute-fp-btn') as HTMLButtonElement;
     const frequentItemsetsDiv = document.getElementById('frequent-itemsets') as HTMLDivElement;
     const executionStatsDiv = document.getElementById('execution-stats') as HTMLDivElement;
-   
+
+    executeFPGrowthButton.addEventListener('click', () => {
+        const transactionsText = transactionsTextarea.value.trim();
+        if (!transactionsText) {
+            showError('Please enter transactions.');
+            return;
+        }
+    
+        const support = parseFloat(supportInput.value);
+        if (isNaN(support) || support <= 0 || support > 1) {
+            showError('Support must be a number between 0 and 1.');
+            return;
+        }
+    
+        // Xử lý dữ liệu đầu vào
+        const transactions = transactionsText
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line)
+            .map(line => line.split(',').map(item => item.trim()));
+    
+        if (transactions.length === 0) {
+            showError('No valid transactions found.');
+            return;
+        }
+    
+        const minSupport = Math.floor(support * transactions.length); // Sử dụng Math.floor()
+        const startTime = performance.now(); // Bắt đầu đo thời gian
+    
+        const frequentItemsets = fpgrowth(transactions, minSupport);
+    
+        const endTime = performance.now(); // Kết thúc đo thời gian
+        const executionTime = (endTime - startTime).toFixed(2);
+    
+        // Xử lý kết quả, loại bỏ trùng lặp
+        const uniqueItemsets = Array.from(new Map(
+            frequentItemsets.map(itemset => [itemset.items.sort().join(','), itemset])
+        ).values());
+    
+        // Sắp xếp tập phổ biến
+        const sortedItemsets = uniqueItemsets.sort((a, b) => {
+            if (a.items.length !== b.items.length) {
+                return a.items.length - b.items.length; // Sắp xếp theo độ dài tập phổ biến
+            }
+            return b.support - a.support; // Nếu cùng độ dài, sắp xếp theo support giảm dần
+        });
+    
+        // Xóa nội dung cũ
+        frequentItemsetsDiv.innerHTML = '';
+        executionStatsDiv.innerHTML = '';
+    
+        // Hiển thị thống kê
+        executionStatsDiv.textContent = `Found ${sortedItemsets.length} frequent itemsets in ${executionTime} ms.`;
+    
+        // Hiển thị kết quả dạng bảng
+        const tableDiv = document.createElement('div');
+        tableDiv.className = 'support-table';
+        tableDiv.innerHTML = '<h3>Frequent Itemsets (FP-Growth):</h3>';
+    
+        const table = document.createElement('table');
+        table.className = 'itemset-table';
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.margin = '20px 0';
+        table.style.border = '2px solid #ddd';
+    
+        // Header
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        ['Itemset', 'Support Count', 'Support %'].forEach(headerText => {
+            const th = document.createElement('th');
+            th.textContent = headerText;
+            th.style.border = '1px solid #ddd';
+            th.style.padding = '10px';
+            th.style.textAlign = 'center';
+            th.style.backgroundColor = '#f2f2f2';
+            th.style.fontWeight = 'bold';
+            th.style.borderBottom = '2px solid #ddd';
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+    
+        // Body
+        const tbody = document.createElement('tbody');
+        sortedItemsets.forEach(itemset => {
+            const row = document.createElement('tr');
+    
+            // Cột Itemset
+            const itemsetCell = document.createElement('td');
+            itemsetCell.textContent = `{${itemset.items.join(', ')}}`;
+            itemsetCell.style.border = '1px solid #ddd';
+            itemsetCell.style.padding = '10px';
+            itemsetCell.style.textAlign = 'center';
+            row.appendChild(itemsetCell);
+    
+            // Cột Support Count
+            const supportCountCell = document.createElement('td');
+            supportCountCell.textContent = itemset.support.toString();
+            supportCountCell.style.border = '1px solid #ddd';
+            supportCountCell.style.padding = '10px';
+            supportCountCell.style.textAlign = 'center';
+            row.appendChild(supportCountCell);
+    
+            // Cột Support Percentage
+            const supportPercentCell = document.createElement('td');
+            const supportPercent = ((itemset.support / transactions.length) * 100).toFixed(2);
+            supportPercentCell.textContent = `${supportPercent}%`;
+            supportPercentCell.style.border = '1px solid #ddd';
+            supportPercentCell.style.padding = '10px';
+            supportPercentCell.style.textAlign = 'center';
+            row.appendChild(supportPercentCell);
+    
+            tbody.appendChild(row);
+        });
+    
+        table.appendChild(tbody);
+        tableDiv.appendChild(table);
+        frequentItemsetsDiv.appendChild(tableDiv);
+    });
+    
+    // Hàm hiển thị lỗi
+    function showError(message: string) {
+        alert(message);
+    }
     
     importButton.addEventListener('click', () => {
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = '.csv, .tsv, .txt';
-    
+
         fileInput.addEventListener('change', (event) => {
             const file = (event.target as HTMLInputElement).files?.[0];
             if (!file) return;
-    
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 let content = e.target?.result as string;
@@ -25,34 +152,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert('File is empty or cannot be read.');
                     return;
                 }
-    
+
                 // Loại bỏ BOM nếu có (UTF-8 BOM)
                 if (content.charCodeAt(0) === 0xFEFF) {
                     content = content.slice(1);
                 }
-    
+
                 // Xác định dấu phân cách CSV
                 const firstLine = content.split('\n')[0];
                 let delimiter = detectDelimiter(firstLine);
-    
+
                 // Chuyển đổi CSV thành mảng các giao dịch
                 const lines = content
                     .split('\n')
                     .map(line => line.trim())
                     .filter(line => line);
-    
+
                 if (lines.length <= 1) {
                     alert('Invalid CSV format');
                     return;
                 }
-    
+
                 // Lấy dòng tiêu đề
                 const headers = parseCSVLine(lines[0], delimiter);
                 if (headers.length < 2) {
                     alert('CSV must have at least two columns');
                     return;
                 }
-    
+
                 // Xử lý dữ liệu, bỏ TransactionID
                 const transactions = lines
                     .slice(1) // Bỏ dòng tiêu đề
@@ -60,17 +187,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         const columns = parseCSVLine(line, delimiter);
                         return columns.slice(1).join(','); // Bỏ cột đầu tiên
                     });
-    
+
                 transactionsTextarea.value = transactions.join('\n');
             };
-    
+
             reader.onerror = () => alert('Error reading file.');
             reader.readAsText(file);
         });
-    
+
         fileInput.click();
     });
-    
+
     /**
      * Xác định dấu phân cách CSV (`,`, `;`, `\t`)
      */
@@ -78,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const delimiters = [',', ';', '\t'];
         let detected = ',';
         let maxCount = 0;
-    
+
         delimiters.forEach(delimiter => {
             const count = sampleLine.split(delimiter).length;
             if (count > maxCount) {
@@ -86,10 +213,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 detected = delimiter;
             }
         });
-    
+
         return detected;
     }
-    
+
     /**
      * Tách dòng CSV, hỗ trợ dấu `"`
      */
@@ -97,7 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const regex = new RegExp(`\\s*${delimiter}\\s*(?=(?:[^"]*"[^"]*")*[^"]*$)`);
         return line.split(regex).map(cell => cell.replace(/^"|"$/g, '').trim());
     }
-    
 
     executeButton.addEventListener('click', () => {
         const transactionsText = transactionsTextarea.value.trim();
