@@ -15,6 +15,7 @@
                 <label for="algorithm-select">Select Algorithm:</label>
                 <select id="algorithm-select">
                     <option value="apriori">Apriori Algorithm</option>
+                    <option value="fp-Growth">FP Growth Algorithm</option>
                     <option value="kmeans">K-means Clustering</option>
                 </select>
             </div>
@@ -31,7 +32,7 @@
                     <input type="number" id="support" min="0" max="1" step="0.1" value="0.5">
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="confidence-group">
                     <label for="min-confidence">Minimum Confidence (0-1):</label>
                     <input type="number" id="min-confidence" min="0" max="1" step="0.1" value="0.5">
                 </div>
@@ -57,6 +58,7 @@
             </div>
             
             <button id="execute-btn">Execute</button>
+            
             <button id="reset-textarea-btn">Reset</button>
             <button id="import-btn">Import File</button>
         </div>

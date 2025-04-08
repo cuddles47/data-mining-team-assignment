@@ -1,13 +1,14 @@
 import { Apriori, IAprioriResults } from "../src/apriori";
 import { KMeans, Point } from "../src/kmeans_clustering";
 
+
 document.addEventListener('DOMContentLoaded', () => {
     const transactionsTextarea = document.getElementById('transactions') as HTMLTextAreaElement;
     const supportInput = document.getElementById('support') as HTMLInputElement;
     const minConfidenceInput = document.getElementById('min-confidence') as HTMLInputElement;
     const executeButton = document.getElementById('execute-btn') as HTMLButtonElement;
     const importButton = document.getElementById('import-btn') as HTMLButtonElement;
-    const executeFPGrowthButton = document.getElementById('execute-fp-btn') as HTMLButtonElement;
+    
     const frequentItemsetsDiv = document.getElementById('frequent-itemsets') as HTMLDivElement;
     const executionStatsDiv = document.getElementById('execution-stats') as HTMLDivElement;
 
@@ -15,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const algorithmSelect = document.getElementById('algorithm-select') as HTMLSelectElement;
     const aprioriParams = document.getElementById('apriori-params') as HTMLDivElement;
     const kmeansParams = document.getElementById('kmeans-params') as HTMLDivElement;
+    const confidenceabc=document.getElementById('confidence-group') as HTMLDivElement;
     const kClustersInput = document.getElementById('k-clusters') as HTMLInputElement;
     const maxIterationsInput = document.getElementById('max-iterations') as HTMLInputElement;
     const useKmeansPPInput = document.getElementById('use-kmeans-pp') as HTMLInputElement;
@@ -36,12 +38,20 @@ document.addEventListener('DOMContentLoaded', () => {
             inputTitle.textContent = 'Input Transactions';
             inputDescription.textContent = 'Enter each transaction on a new line. Items within a transaction should be separated by commas.';
             executeButton.textContent = 'Execute Apriori';
-        } else {
+        } else if (selectedAlgorithm === 'kmeans') {
             aprioriParams.style.display = 'none';
             kmeansParams.style.display = 'block';
             inputTitle.textContent = 'Input Data Points';
             inputDescription.textContent = 'Enter each data point on a new line. Values should be numeric and separated by commas.';
             executeButton.textContent = 'Execute K-means';
+        }else{
+            aprioriParams.style.display = 'block';
+            kmeansParams.style.display = 'none';
+            confidenceabc.style.display = 'none';
+            visualizationContainer.style.display = 'none';
+            inputTitle.textContent = 'Input Transactions';
+            inputDescription.textContent = 'Enter each transaction on a new line. Items within a transaction should be separated by commas.';
+            executeButton.textContent = 'Execute FP-Growth';
         }
     });
 
@@ -170,8 +180,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Execute selected algorithm
         if (algorithmSelect.value === 'apriori') {
             executeApriori(transactionsText);
-        } else {
+        } else if (algorithmSelect.value === 'kmeans') {
             executeKMeans(transactionsText);
+        }else{
+            executeFpGrowth(transactionsText);
         }
     });
 
@@ -394,7 +406,129 @@ document.addEventListener('DOMContentLoaded', () => {
             executionStatsDiv.textContent = `Error: ${error.message}`;
         }
     }
-
+    
+    function executeFpGrowth(transactionsText: string) {
+        const support = parseFloat(supportInput.value);
+        if (isNaN(support) || support <= 0 || support > 1) {
+            alert('Support must be a number between 0 and 1');
+            return;
+        }
+    
+        const minConfidence = parseFloat(minConfidenceInput.value);
+        if (isNaN(minConfidence) || minConfidence <= 0 || minConfidence > 1) {
+            alert('Minimum confidence must be a number between 0 and 1');
+            return;
+        }
+    
+        // Chuyển đổi dữ liệu giao dịch
+        const transactions = transactionsText.split('\n')
+            .map(line => line.trim())
+            .filter(line => line)
+            .map(line => line.split(',').map(item => item.trim()));
+    
+        const minSupportCount = Math.ceil(support * transactions.length);
+    
+        // Gọi hàm fpgrowth để chạy thuật toán FP-Growth
+        const { fpgrowth } = require('../src/fpGrowth'); // Import FP-Growth implementation
+        const frequentItemsets = fpgrowth(transactions, minSupportCount);
+    
+        // Hiển thị kết quả
+        executionStatsDiv.textContent = `Finished executing FP-Growth. ${frequentItemsets.length} frequent itemsets were found.`;
+    
+        // Hiển thị các tập mục phổ biến
+        const tableDiv = document.createElement('div');
+        tableDiv.className = 'support-table';
+        tableDiv.innerHTML = '<h3>Frequent Itemsets:</h3>';
+    
+        const table = document.createElement('table');
+        table.className = 'itemset-table';
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.margin = '20px 0';
+        table.style.border = '2px solid #ddd';
+    
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        ['Itemset'].forEach(headerText => {
+            const th = document.createElement('th');
+            th.textContent = headerText;
+            th.style.border = '1px solid #ddd';
+            th.style.padding = '10px';
+            th.style.textAlign = 'center';
+            th.style.backgroundColor = '#f2f2f2';
+            th.style.fontWeight = 'bold';
+            th.style.borderBottom = '2px solid #ddd';
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+    
+        const tbody = document.createElement('tbody');
+        frequentItemsets.forEach((itemset: { items: string[]; support: number }) => {
+            const row = document.createElement('tr');
+    
+            const itemCell = document.createElement('td');
+            itemCell.textContent = `{${itemset.items.join(', ')}}`;
+            itemCell.style.border = '1px solid #ddd';
+            itemCell.style.padding = '10px';
+            itemCell.style.textAlign = 'center';
+            row.appendChild(itemCell);
+    
+            // const supportCountCell = document.createElement('td');
+            // supportCountCell.textContent = itemset.support.toString();
+            // supportCountCell.style.border = '1px solid #ddd';
+            // supportCountCell.style.padding = '10px';
+            // supportCountCell.style.textAlign = 'center';
+            // row.appendChild(supportCountCell);
+    
+            // const supportPercentCell = document.createElement('td');
+            // const supportPercent = ((itemset.support / transactions.length) * 100).toFixed(2);
+            // supportPercentCell.textContent = `${supportPercent}%`;
+            // supportPercentCell.style.border = '1px solid #ddd';
+            // supportPercentCell.style.padding = '10px';
+            // supportPercentCell.style.textAlign = 'center';
+            // row.appendChild(supportPercentCell);
+    
+            tbody.appendChild(row);
+        });
+    
+        table.appendChild(tbody);
+        tableDiv.appendChild(table);
+        frequentItemsetsDiv.appendChild(tableDiv);
+    
+        // Hiển thị luật kết hợp
+        const rulesDiv = document.createElement('div');
+        rulesDiv.innerHTML = '<h3>Association Rules:</h3>';
+    
+        frequentItemsets.forEach((itemset: { items: string[]; support: number }) => {
+            if (itemset.items.length > 1) {
+                for (let i = 0; i < itemset.items.length; i++) {
+                    const consequent = [itemset.items[i]];
+                    // const antecedent = itemset.items.filter((_, idx) => idx !== i);
+    
+                    // const antecedentItemset = frequentItemsets.find((is: { items: string[]; support: number }) =>
+                    //     is.items.length === antecedent.length &&
+                    //     antecedent.every(item => is.items.includes(item))
+                    // );
+    
+                    // if (antecedentItemset) {
+                    //     // const confidence = itemset.support / antecedentItemset.support;
+    
+                    //     if (confidence >= minConfidence) {
+                    //         const ruleDiv = document.createElement('div');
+                    //         ruleDiv.className = 'rule';
+                    //         ruleDiv.innerHTML = `{ antecedent: ['${antecedent.join("', '")}'], consequent: ['${consequent.join("', '")}'], confidence: ${confidence.toFixed(2)} }`;
+                    //         rulesDiv.appendChild(document.createElement('br'));
+                    //         rulesDiv.appendChild(ruleDiv);
+                    //         rulesDiv.appendChild(document.createElement('br'));
+                    //     }
+                    // }
+                }
+            }
+        });
+    
+        frequentItemsetsDiv.appendChild(rulesDiv);
+    }
     function parseDataForKMeans(dataText: string): Point[] {
         const lines = dataText.split('\n')
             .map(line => line.trim())

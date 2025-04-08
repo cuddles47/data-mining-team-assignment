@@ -86,53 +86,86 @@ function logFPTree(node: FPTreeNode, indent: string = "") {
 export function fpgrowth(transactions: string[][], minSupport: number): { items: string[]; support: number }[] {
     const itemSupport: Map<string, number> = new Map();
 
+    // Step 1: Count item frequencies
     for (const transaction of transactions) {
         for (const item of transaction) {
             itemSupport.set(item, (itemSupport.get(item) || 0) + 1);
         }
     }
 
+    // Step 2: Filter and sort frequent items
     const frequentItems = Array.from(itemSupport.entries())
         .filter(([_, count]) => count >= minSupport)
-        .sort((a, b) => b[1] - a[1])
+        .sort((a, b) => {
+            // Sắp xếp giảm dần theo tần suất
+            if (b[1] !== a[1]) {
+                return b[1] - a[1];
+            }
+            // Nếu tần suất bằng nhau, sắp xếp tăng dần theo mã ASCII
+            return a[0].localeCompare(b[0]);
+        })
         .map(([item]) => item);
 
     if (frequentItems.length === 0) return [];
-
+    console.log("Step 2: Frequent Items after filtering and sorting:", frequentItems);
+    // Step 3: Build FP-Tree
     const tree = new FPTree();
     for (const transaction of transactions) {
         const filteredTransaction = transaction
             .filter(item => frequentItems.includes(item))
-            .sort((a, b) => (itemSupport.get(b) || 0) - (itemSupport.get(a) || 0));
+            .sort((a, b) => frequentItems.indexOf(a) - frequentItems.indexOf(b));
 
         tree.addTransaction(filteredTransaction);
+        console.log("Filtered Transaction:", filteredTransaction);
     }
-
+    
     console.log("🌳 FP-Tree Structure:");
     logFPTree(tree.root);
 
+    // Step 4: Mine frequent itemsets
     const frequentItemsets: { items: string[]; support: number }[] = [];
 
     function mineTree(tree: FPTree, suffix: string[] = []) {
-        for (const item of frequentItems.slice().reverse()) {
-            const conditionalPatternBase = tree.getConditionalPatternBase(item);
-            if (conditionalPatternBase.length === 0) continue;
-
-            const conditionalTree = new FPTree();
-            for (const { pattern, count } of conditionalPatternBase) {
-                conditionalTree.addTransaction(pattern, count);
+        // Bước 1: Lấy danh sách các mục trong header table và sắp xếp theo thứ tự tăng dần độ phổ biến (giống hình)
+        const itemsInTree = Array.from(tree.headerTable.keys());
+    
+        for (const item of itemsInTree.reverse()) {
+            // Bước 2: Tính tổng support
+            let support = 0;
+            let node: FPTreeNode | undefined = tree.headerTable.get(item);
+            while (node) {
+                support += node.count;
+                node = node.next;
             }
-
-            const support = itemSupport.get(item) || 0;
+    
             if (support >= minSupport) {
-                frequentItemsets.push({ items: [item, ...suffix], support });
-                mineTree(conditionalTree, [item, ...suffix]);
+                const newItemset = [item, ...suffix];
+                frequentItemsets.push({ items: newItemset, support });
+    
+                // Bước 3: Lấy cơ sở mẫu điều kiện
+                const conditionalPatternBase = tree.getConditionalPatternBase(item);
+    
+                // Bước 4: Tạo cây FP-Tree điều kiện
+                const conditionalTree = new FPTree();
+                for (const { pattern, count } of conditionalPatternBase) {
+                    conditionalTree.addTransaction(pattern, count);
+                }
+    
+                // Bước 5: Đệ quy khai thác cây điều kiện
+                if (conditionalTree.root.children.size > 0) {
+                    mineTree(conditionalTree, newItemset);
+                }
             }
         }
     }
+    
+    
+    
 
     mineTree(tree);
-
+    console.log("Frequent Itemsets:", frequentItemsets);
+    
+    // Remove duplicate itemsets
     return Array.from(new Map(
         frequentItemsets.map(itemset => [itemset.items.sort().join(','), itemset])
     ).values());
