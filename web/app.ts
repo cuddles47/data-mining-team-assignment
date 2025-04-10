@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const minConfidenceInput = document.getElementById('min-confidence') as HTMLInputElement;
     const executeButton = document.getElementById('execute-btn') as HTMLButtonElement;
     const importButton = document.getElementById('import-btn') as HTMLButtonElement;
-    
+
     const frequentItemsetsDiv = document.getElementById('frequent-itemsets') as HTMLDivElement;
     const executionStatsDiv = document.getElementById('execution-stats') as HTMLDivElement;
 
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const algorithmSelect = document.getElementById('algorithm-select') as HTMLSelectElement;
     const aprioriParams = document.getElementById('apriori-params') as HTMLDivElement;
     const kmeansParams = document.getElementById('kmeans-params') as HTMLDivElement;
-    const confidenceabc=document.getElementById('confidence-group') as HTMLDivElement;
+    const confidenceabc = document.getElementById('confidence-group') as HTMLDivElement;
     const kClustersInput = document.getElementById('k-clusters') as HTMLInputElement;
     const maxIterationsInput = document.getElementById('max-iterations') as HTMLInputElement;
     const useKmeansPPInput = document.getElementById('use-kmeans-pp') as HTMLInputElement;
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
             inputTitle.textContent = 'Input Data Points';
             inputDescription.textContent = 'Enter each data point on a new line. Values should be numeric and separated by commas.';
             executeButton.textContent = 'Execute K-means';
-        }else{
+        } else {
             aprioriParams.style.display = 'block';
             kmeansParams.style.display = 'none';
             confidenceabc.style.display = 'none';
@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             executeApriori(transactionsText);
         } else if (algorithmSelect.value === 'kmeans') {
             executeKMeans(transactionsText);
-        }else{
+        } else {
             executeFpGrowth(transactionsText);
         }
     });
@@ -202,10 +202,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const transactions = transactionsText.split('\n')
             .map(line => line.trim())
-            .filter(line => line) 
+            .filter(line => line)
             .map(line => line.split(',').map(item => item.trim()));
 
-        const frequentItemsets: Array<{items: string[], support: number}> = [];
+        const frequentItemsets: Array<{ items: string[], support: number }> = [];
 
         const apriori = new Apriori<string>(support);
         apriori.on('data', (itemset) => {
@@ -309,21 +309,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Use the configurable minimum confidence value
 
                 frequentItemsets.forEach(itemset => {
-                    if(itemset.items.length > 1) {
-                        for(let i = 0; i < itemset.items.length; i++) {
+                    if (itemset.items.length > 1) {
+                        for (let i = 0; i < itemset.items.length; i++) {
                             const consequent = [itemset.items[i]];
                             const antecedent = itemset.items.filter((_, idx) => idx !== i);
 
                             // Find the support of the antecedent
-                            const antecedentItemset = frequentItemsets.find(is => 
-                                is.items.length === antecedent.length && 
+                            const antecedentItemset = frequentItemsets.find(is =>
+                                is.items.length === antecedent.length &&
                                 antecedent.every(item => is.items.includes(item))
                             );
 
-                            if(antecedentItemset) {
+                            if (antecedentItemset) {
                                 const confidence = itemset.support / antecedentItemset.support;
 
-                                if(confidence >= minConfidence) {
+                                if (confidence >= minConfidence) {
                                     const ruleDiv = document.createElement('div');
                                     ruleDiv.className = 'rule';
                                     ruleDiv.innerHTML = `{ điều kiện: ['${antecedent.join("', '")}'], kết quả: ['${consequent.join("', '")}'], min_conf: ${confidence.toFixed(2)} }`;
@@ -406,50 +406,148 @@ document.addEventListener('DOMContentLoaded', () => {
             executionStatsDiv.textContent = `Error: ${error.message}`;
         }
     }
-    
+
+
     function executeFpGrowth(transactionsText: string) {
-        const support = parseFloat(supportInput.value);
+        const support = parseFloat((document.getElementById('support') as HTMLInputElement).value);
         if (isNaN(support) || support <= 0 || support > 1) {
             alert('Support must be a number between 0 and 1');
             return;
         }
-    
-        const minConfidence = parseFloat(minConfidenceInput.value);
-        if (isNaN(minConfidence) || minConfidence <= 0 || minConfidence > 1) {
-            alert('Minimum confidence must be a number between 0 and 1');
-            return;
-        }
-    
+
         // Chuyển đổi dữ liệu giao dịch
         const transactions = transactionsText.split('\n')
             .map(line => line.trim())
             .filter(line => line)
             .map(line => line.split(',').map(item => item.trim()));
-    
+
         const minSupportCount = Math.ceil(support * transactions.length);
-    
+
         // Gọi hàm fpgrowth để chạy thuật toán FP-Growth
         const { fpgrowth } = require('../src/fpGrowth'); // Import FP-Growth implementation
-        const frequentItemsets = fpgrowth(transactions, minSupportCount);
+        const { frequentItemsets, logs, frequentItemsetsData, treeNodes } = fpgrowth(transactions, minSupportCount);
+
+        // Lấy container hiển thị kết quả
+        const resultsContainer = document.getElementById('results-container')!;
+        resultsContainer.innerHTML = ''; // Xóa nội dung cũ
+
+        // Hiển thị Step 2: Frequent Items
+        const step2Div = document.createElement('div');
+        step2Div.innerHTML = '<h3>Step 2: Frequent Items</h3>';
+
+        const step2Table = document.createElement('table');
+        step2Table.className = 'itemset-table';
+        step2Table.style.width = '100%';
+        step2Table.style.borderCollapse = 'collapse';
+        step2Table.style.margin = '20px 0';
+        step2Table.style.border = '2px solid #ddd';
+
+        // Tạo header cho bảng
+        const step2Thead = document.createElement('thead');
+        const step2HeaderRow = document.createElement('tr');
+        ['Item', 'Support Count'].forEach(headerText => {
+            const th = document.createElement('th');
+            th.textContent = headerText;
+            th.style.border = '1px solid #ddd';
+            th.style.padding = '10px';
+            th.style.textAlign = 'center';
+            th.style.backgroundColor = '#f2f2f2';
+            th.style.fontWeight = 'bold';
+            th.style.borderBottom = '2px solid #ddd';
+            step2HeaderRow.appendChild(th);
+        });
+        step2Thead.appendChild(step2HeaderRow);
+        step2Table.appendChild(step2Thead);
+
+        // Tạo nội dung bảng
+        const step2Tbody = document.createElement('tbody');
+        (logs as string[]).filter(log => log.startsWith('Item:')).forEach(log => {
+            const row = document.createElement('tr');
+
+            const [item, supportCount] = log.replace('Item: ', '').split(', Support Count: ');
+
+            const itemCell = document.createElement('td');
+            itemCell.textContent = item;
+            itemCell.style.border = '1px solid #ddd';
+            itemCell.style.padding = '10px';
+            itemCell.style.textAlign = 'center';
+            row.appendChild(itemCell);
+
+            const supportCountCell = document.createElement('td');
+            supportCountCell.textContent = supportCount;
+            supportCountCell.style.border = '1px solid #ddd';
+            supportCountCell.style.padding = '10px';
+            supportCountCell.style.textAlign = 'center';
+            row.appendChild(supportCountCell);
+
+            step2Tbody.appendChild(row);
+        });
+        step2Table.appendChild(step2Tbody);
+        step2Div.appendChild(step2Table);
+        resultsContainer.appendChild(step2Div);
+
+        // Hiển thị FP-Tree
+        const fpTreeDiv = document.createElement('div');
+        fpTreeDiv.innerHTML = '<h3>FP-Tree Structure</h3>';
+
+        // Tạo hoặc lấy phần tử <pre>
+        let fpTreeList = document.getElementById('fp-tree') as HTMLPreElement;
+        if (!fpTreeList) {
+            fpTreeList = document.createElement('pre');
+            fpTreeList.id = 'fp-tree';
+        }
+
+        // Dòng đầu tiên là root
+        const treeLines: string[] = ['Root'];
+        
+        // Duyệt qua treeNodes và tạo chuỗi có indent đúng theo depth
+        for (let i = 0; i < treeNodes.length; i++) {
+            const current = treeNodes[i];
+            const next = treeNodes[i + 1];
+            const isLast =
+                !next || next.depth <= current.depth; // Kiểm tra nếu node kế tiếp có depth nhỏ hơn hoặc bằng thì node hiện tại là cuối cùng ở level này
+        
+            const prefix = '│   '.repeat(current.depth);
+            const connector = isLast ? '└── ' : '├── ';
+            treeLines.push(`${prefix}${connector}${current.label}`);
+        }
+
+        // Gán nội dung vào <pre>
+        fpTreeList.textContent = treeLines.join('\n');
+
+        // Thêm vào DOM
+        fpTreeDiv.appendChild(fpTreeList);
+        resultsContainer.appendChild(fpTreeDiv);
+
+
+
+        // Hiển thị Frequent Patterns
+        displayFrequentItemsetsTable(frequentItemsetsData);
+    }
     
-        // Hiển thị kết quả
-        executionStatsDiv.textContent = `Finished executing FP-Growth. ${frequentItemsets.length} frequent itemsets were found.`;
-    
-        // Hiển thị các tập mục phổ biến
-        const tableDiv = document.createElement('div');
-        tableDiv.className = 'support-table';
-        tableDiv.innerHTML = '<h3>Frequent Itemsets:</h3>';
-    
+    function displayFrequentItemsetsTable(frequentItemsetsData: Array<{
+        x: string;
+        conditionalBase: string[];
+        fpTree: string[];
+        frequentPatterns: string[];
+    }>) {
+        // Tạo container cho bảng
+        const resultsContainer = document.getElementById('results-container') || document.body;
+        const frequentItemsetsDiv = document.createElement('div');
+        frequentItemsetsDiv.innerHTML = '<h3>Kết quả FP-Growth</h3>';
+
+        // Tạo bảng
         const table = document.createElement('table');
         table.className = 'itemset-table';
         table.style.width = '100%';
         table.style.borderCollapse = 'collapse';
         table.style.margin = '20px 0';
         table.style.border = '2px solid #ddd';
-    
+
+        // Tạo header cho bảng
         const thead = document.createElement('thead');
         const headerRow = document.createElement('tr');
-        ['Itemset'].forEach(headerText => {
+        ['x', 'Cơ sở mẫu điều kiện', 'Cây FP-tree', 'Sinh các mẫu phổ biến'].forEach(headerText => {
             const th = document.createElement('th');
             th.textContent = headerText;
             th.style.border = '1px solid #ddd';
@@ -462,73 +560,54 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         thead.appendChild(headerRow);
         table.appendChild(thead);
-    
+
+        // Tạo nội dung bảng
         const tbody = document.createElement('tbody');
-        frequentItemsets.forEach((itemset: { items: string[]; support: number }) => {
+        frequentItemsetsData.forEach(itemset => {
             const row = document.createElement('tr');
-    
-            const itemCell = document.createElement('td');
-            itemCell.textContent = `{${itemset.items.join(', ')}}`;
-            itemCell.style.border = '1px solid #ddd';
-            itemCell.style.padding = '10px';
-            itemCell.style.textAlign = 'center';
-            row.appendChild(itemCell);
-    
-            // const supportCountCell = document.createElement('td');
-            // supportCountCell.textContent = itemset.support.toString();
-            // supportCountCell.style.border = '1px solid #ddd';
-            // supportCountCell.style.padding = '10px';
-            // supportCountCell.style.textAlign = 'center';
-            // row.appendChild(supportCountCell);
-    
-            // const supportPercentCell = document.createElement('td');
-            // const supportPercent = ((itemset.support / transactions.length) * 100).toFixed(2);
-            // supportPercentCell.textContent = `${supportPercent}%`;
-            // supportPercentCell.style.border = '1px solid #ddd';
-            // supportPercentCell.style.padding = '10px';
-            // supportPercentCell.style.textAlign = 'center';
-            // row.appendChild(supportPercentCell);
-    
+
+            // Cột x
+            const xCell = document.createElement('td');
+            xCell.textContent = itemset.x;
+            xCell.style.border = '1px solid #ddd';
+            xCell.style.padding = '10px';
+            xCell.style.textAlign = 'center';
+            row.appendChild(xCell);
+
+            // Cột Cơ sở mẫu điều kiện
+            const conditionalBaseCell = document.createElement('td');
+            conditionalBaseCell.textContent = itemset.conditionalBase.join(', ');
+            conditionalBaseCell.style.border = '1px solid #ddd';
+            conditionalBaseCell.style.padding = '10px';
+            conditionalBaseCell.style.textAlign = 'center';
+            row.appendChild(conditionalBaseCell);
+
+            // Cột Cây FP-tree
+            const fpTreeCell = document.createElement('td');
+            fpTreeCell.textContent = itemset.fpTree.join(', ');
+            fpTreeCell.style.border = '1px solid #ddd';
+            fpTreeCell.style.padding = '10px';
+            fpTreeCell.style.textAlign = 'center';
+            row.appendChild(fpTreeCell);
+
+            // Cột Sinh các mẫu phổ biến
+            const frequentPatternsCell = document.createElement('td');
+            frequentPatternsCell.textContent = itemset.frequentPatterns.join(', ');
+            frequentPatternsCell.style.border = '1px solid #ddd';
+            frequentPatternsCell.style.padding = '10px';
+            frequentPatternsCell.style.textAlign = 'center';
+            row.appendChild(frequentPatternsCell);
+
             tbody.appendChild(row);
         });
-    
+
         table.appendChild(tbody);
-        tableDiv.appendChild(table);
-        frequentItemsetsDiv.appendChild(tableDiv);
-    
-        // Hiển thị luật kết hợp
-        const rulesDiv = document.createElement('div');
-        rulesDiv.innerHTML = '<h3>Association Rules:</h3>';
-    
-        frequentItemsets.forEach((itemset: { items: string[]; support: number }) => {
-            if (itemset.items.length > 1) {
-                for (let i = 0; i < itemset.items.length; i++) {
-                    const consequent = [itemset.items[i]];
-                    // const antecedent = itemset.items.filter((_, idx) => idx !== i);
-    
-                    // const antecedentItemset = frequentItemsets.find((is: { items: string[]; support: number }) =>
-                    //     is.items.length === antecedent.length &&
-                    //     antecedent.every(item => is.items.includes(item))
-                    // );
-    
-                    // if (antecedentItemset) {
-                    //     // const confidence = itemset.support / antecedentItemset.support;
-    
-                    //     if (confidence >= minConfidence) {
-                    //         const ruleDiv = document.createElement('div');
-                    //         ruleDiv.className = 'rule';
-                    //         ruleDiv.innerHTML = `{ antecedent: ['${antecedent.join("', '")}'], consequent: ['${consequent.join("', '")}'], confidence: ${confidence.toFixed(2)} }`;
-                    //         rulesDiv.appendChild(document.createElement('br'));
-                    //         rulesDiv.appendChild(ruleDiv);
-                    //         rulesDiv.appendChild(document.createElement('br'));
-                    //     }
-                    // }
-                }
-            }
-        });
-    
-        frequentItemsetsDiv.appendChild(rulesDiv);
+        frequentItemsetsDiv.appendChild(table);
+
+        // Thêm bảng vào DOM
+        resultsContainer.appendChild(frequentItemsetsDiv);
     }
+
     function parseDataForKMeans(dataText: string): Point[] {
         const lines = dataText.split('\n')
             .map(line => line.trim())
@@ -660,7 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Cluster label cell
             const clusterCell = document.createElement('td');
-            clusterCell.textContent = `Cluster ${i+1}`;
+            clusterCell.textContent = `Cluster ${i + 1}`;
             clusterCell.style.border = '1px solid #ddd';
             clusterCell.style.padding = '10px';
             clusterCell.style.textAlign = 'center';
@@ -725,7 +804,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const avgDistance = totalDistance / cluster.length;
                 const avgDistItem = document.createElement('li');
-                avgDistItem.innerHTML = `<strong>Cluster ${i+1} Average Distance:</strong> ${avgDistance.toFixed(4)}`;
+                avgDistItem.innerHTML = `<strong>Cluster ${i + 1} Average Distance:</strong> ${avgDistance.toFixed(4)}`;
                 avgDistItem.style.margin = '10px 0';
                 statsList.appendChild(avgDistItem);
             }
@@ -789,7 +868,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!xDim || !yDim) return;
 
             // Create merged data with cluster assignments
-            const mergedData: Array<{point: Point, cluster: number}> = [];
+            const mergedData: Array<{ point: Point, cluster: number }> = [];
             clusters.forEach((cluster, i) => {
                 cluster.forEach(point => {
                     mergedData.push({ point, cluster: i });
@@ -808,9 +887,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function drawClusterScatterplot(
-        data: Array<{point: Point, cluster: number}>, 
-        centroids: Point[], 
-        xDim: string, 
+        data: Array<{ point: Point, cluster: number }>,
+        centroids: Point[],
+        xDim: string,
         yDim: string
     ) {
         const canvas = clusterCanvas;
@@ -943,7 +1022,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillStyle = '#000';
             ctx.font = 'bold 12px Arial';
             ctx.textAlign = 'left';
-            ctx.fillText(`C${i+1}`, x + 12, y + 5);
+            ctx.fillText(`C${i + 1}`, x + 12, y + 5);
         });
 
         // Draw legend
@@ -966,7 +1045,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Draw label
             ctx.fillStyle = '#000';
-            ctx.fillText(`Cluster ${i+1}`, legendX + 15, y + 4);
+            ctx.fillText(`Cluster ${i + 1}`, legendX + 15, y + 4);
         }
     }
 });
