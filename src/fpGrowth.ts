@@ -298,7 +298,7 @@ export function fpgrowth(
 
 
                 console.log(`Valid Conditional FP-Tree Nodes for ${item}:`, validConditionalTreeLogs);
-                const conditionalPatterns = [];
+                const conditionalPatterns: { items: any; support: any; }[] = [];
 
                 if (validConditionalTreeLogs.length === 0) {
                     logs.push(`No valid nodes in Conditional FP-Tree for ${item} with support >= ${minSupport}`);
@@ -324,31 +324,57 @@ export function fpgrowth(
                 }
                 // Sinh các mẫu phổ biến từ validConditionalTreeLogs
 
+                // const Valid = Array.from(new Set(validConditionalTreeLogs));
+                // Chuẩn hóa và lọc trùng
 
-                for (const log of validConditionalTreeLogs) {
-                    console.log("Log:", log);
-                    const match = log.match(/^(.+?) \((\d+)\)$/); // Trích xuất item và count từ chuỗi log
-                    console.log("match:", match);
-                    if (match) {
-                        const nodeItem = match[1]; // Item từ log
-                        const nodeCount = parseInt(match[2], 10); // Count từ log
-                        console.log(`Node Item: ${nodeItem}, Node Count: ${nodeCount}`);
-                        // Tạo tổ hợp mở rộng mẫu phổ biến α ∪ β
-                        let combinedItemset = [nodeItem, item, ...suffix];
-                        combinedItemset = Array.from(new Set(combinedItemset)); // Loại bỏ các phần tử trùng lặp
-                        const combinedItemset1 = uniqueArrays([combinedItemset]);
-                        
-                        console.log(`Combined Itemset: {${combinedItemset.join(', ')}} with support ${nodeCount}`);
 
-                        conditionalPatterns.push({ items: combinedItemset1, support: nodeCount });
-                        frequentItemsets.push({ items: combinedItemset, support: nodeCount });
-                        logs.push(`Conditional Frequent Itemset: {${combinedItemset1.join(', ')}} with support ${nodeCount}`);
-                        console.log(`Conditional Frequent Itemset: {${combinedItemset1.join(', ')}} with support ${nodeCount}`);
+                // In ra kết quả gốc nhưng không bị trùng sau khi chuẩn hóa
+                const result = [];
+                const seen = new Set();
+
+                for (const item of validConditionalTreeLogs) {
+                    const normalized = item.trim();
+                    if (!seen.has(normalized)) {
+                        seen.add(normalized);
+                        result.push(item);
                     }
                 }
+
+                console.log(result);
+                // Hàm tạo tất cả các tổ hợp con từ một mảng
+                function generateSubsets(array: string[]): string[][] {
+                    const subsets: string[][] = [[]];
+                    for (const element of array) {
+                        const currentLength = subsets.length;
+                        for (let i = 0; i < currentLength; i++) {
+                            subsets.push([...subsets[i], element]);
+                        }
+                    }
+                    return subsets;
+                }
+
+                // Tạo tổ hợp từ result và item
+                const resultItems = result.map(log => log.match(/^(.+?) \((\d+)\)$/)?.[1]).filter(Boolean) as string[];
+                const subsets = generateSubsets(resultItems);
+
+                // Kết hợp từng tổ hợp con với item
+                for (const subset of subsets) {
+                    const combinedItemset = Array.from(new Set([item, ...subset, ...suffix])).sort();
+                    const support = Math.min(...result.map(log => parseInt(log.match(/\((\d+)\)$/)?.[1] || "0", 10)));
+
+                    // Kiểm tra và thêm vào conditionalPatterns nếu chưa tồn tại
+                    const itemsetKey = combinedItemset.join(',');
+                    if (!conditionalPatterns.some(pattern => pattern.items.join(',') === itemsetKey)) {
+                        conditionalPatterns.push({ items: combinedItemset, support });
+                        frequentItemsets.push({ items: combinedItemset, support });
+                        logs.push(`Conditional Frequent Itemset: {${combinedItemset.join(', ')}} with support ${support}`);
+                        console.log(`Conditional Frequent Itemset: {${combinedItemset.join(', ')}} with support ${support}`);
+                    }
+                }
+
                 console.log("Conditional Patterns:", conditionalPatterns);
-                
-              
+
+
 
 
 
@@ -387,15 +413,14 @@ export function fpgrowth(
 function uniqueArrays<T>(arrays: T[][], ignoreOrder: boolean = true): T[][] {
     const seen = new Set<string>();
     const result: T[][] = [];
-  
+
     for (const arr of arrays) {
-      const key = ignoreOrder ? [...arr].sort().join(',') : arr.join(',');
-      if (!seen.has(key)) {
-        seen.add(key);
-        result.push(arr);
-      }
+        const key = ignoreOrder ? [...arr].sort().join(',') : arr.join(',');
+        if (!seen.has(key)) {
+            seen.add(key);
+            result.push(arr);
+        }
     }
-  
+
     return result;
-  }
-  
+}
