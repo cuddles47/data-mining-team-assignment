@@ -1,26 +1,26 @@
 import { EventEmitter } from 'events';
 
-interface ItemsCount {
+interface DemMatHang {
     [stringifiedItem: string]: number
 }
 
-export interface IAprioriEvents<T> {
-    on(event: 'data', listener: (itemset: Itemset<T>) => void): this;
+export interface ISukienApriori<T> {
+    on(event: 'data', listener: (tapmathangs: TapMatHang<T>) => void): this;
     on(event: string, listener: Function): this;
 }
 
-export interface IAprioriResults<T> {
-    itemsets: Itemset<T>[],
-    executionTime: number
+export interface IKetQuaApriori<T> {
+    tapmathang: TapMatHang<T>[],
+    thoigianthaotac: number
 }
 
-export interface Itemset<T> {
-    items: T[],
-    support: number
+export interface TapMatHang<T> {
+    mathang: T[],
+    hotro: number
 }
 
-export class Apriori<T> extends EventEmitter implements IAprioriEvents<T> {
-    private _transactions!: T[][];
+export class Apriori<T> extends EventEmitter implements ISukienApriori<T> {
+    private _giaodich!: T[][];
 
     /**
      * Apriori is an algorithm for frequent item set mining and association rule
@@ -29,9 +29,9 @@ export class Apriori<T> extends EventEmitter implements IAprioriEvents<T> {
      * and extending them to larger and larger item sets as long as those item sets appear
      * sufficiently often in the database.
      *
-     * @param  {number} _support 0 < _support < 1. Minimum support of itemsets to mine.
+     * @param  {number} _hotro 0 < _hotro < 1. Minimum support of itemsets to mine.
      */
-    constructor( private _support: number /*, private _confidence: number*/ ) {
+    constructor( private _hotro: number /*, private _tindung: number*/ ) {
         super();
     }
 
@@ -40,61 +40,61 @@ export class Apriori<T> extends EventEmitter implements IAprioriEvents<T> {
      * You can keep track of frequent itemsets as they are mined by listening to the 'data' event on the Apriori object.
      * All mined itemsets, as well as basic execution stats, are returned at the end of the execution through a callback function or a Promise.
      *
-     * @param  {T[][]}              transactions The transactions from which you want to mine itemsets.
-     * @param  {IAprioriResults<T>} cb           Callback function returning the results.
-     * @return {Promise<IAprioriResults<T>>}     Promise returning the results.
+     * @param  {T[][]}              giaodich The transactions from which you want to mine itemsets.
+     * @param  {IKetQuaApriori<T>} cb           Callback function returning the results.
+     * @return {Promise<IKetQuaApriori<T>>}     Promise returning the results.
      */
-    public exec( transactions: T[][], cb?: (result: IAprioriResults<T>) => any ): Promise<IAprioriResults<T>> {
-        this._transactions = transactions;
+    public thucthi( giaodich: T[][], cb?: (result: IKetQuaApriori<T>) => any ): Promise<IKetQuaApriori<T>> {
+        this._giaodich = giaodich;
         // Relative support.
-        this._support = Math.ceil(this._support * transactions.length);
+        this._hotro = Math.ceil(this._hotro * giaodich.length);
 
-        return new Promise<IAprioriResults<T>>( (resolve, reject) => {
-            let startTime = performance.now();
+        return new Promise<IKetQuaApriori<T>>( (resolve, reject) => {
+            let thoigianbatdau = performance.now();
 
             // Generate frequent one-itemsets.
-            let frequentItemsets: Itemset<T>[][] = [ this.getFrequentOneItemsets(this._transactions) ];
+            let tapmathangphobien: TapMatHang<T>[][] = [ this.layTapMatHangMotPhoBien(this._giaodich) ];
 
             let i: number = 0;
             // Generate frequent (i+1)-itemsets.
-            while( frequentItemsets[i].length > 0 ) {
-                frequentItemsets.push( this.getFrequentKItemsets(frequentItemsets[i]) );
+            while( tapmathangphobien[i].length > 0 ) {
+                tapmathangphobien.push( this.layTapMatHangKPhoBien(tapmathangphobien[i]) );
                 i++;
             }
 
-            let endTime = performance.now();
+            let thoigianketthuc = performance.now();
 
             // Formatting results.
-            let result: IAprioriResults<T> = {
-                itemsets: frequentItemsets.reduce((acc, val) => acc.concat(val), []),
-                executionTime: Math.round(endTime - startTime)
+            let ketqua: IKetQuaApriori<T> = {
+                tapmathang: tapmathangphobien.reduce((acc, val) => acc.concat(val), []),
+                thoigianthaotac: Math.round(thoigianketthuc - thoigianbatdau)
             };
 
-            if(cb) cb(result);
-            resolve(result);
+            if(cb) cb(ketqua);
+            resolve(ketqua);
         });
     }
 
     /**
      * Returns frequent one-itemsets from a given set of transactions.
      *
-     * @param  {T[][]}              transactions Your set of transactions.
-     * @return {Itemset<T>[]}       Frequent one-itemsets.
+     * @param  {T[][]}              giaodich Your set of transactions.
+     * @return {TapMatHang<T>[]}       Frequent one-itemsets.
      */
-    private getFrequentOneItemsets( transactions: T[][] ): Itemset<T>[] {
+    private layTapMatHangMotPhoBien( giaodich: T[][] ): TapMatHang<T>[] {
         // This generates one-itemset candidates.
-        let count: ItemsCount = this._getDistinctItemsCount(transactions);
+        let dem: DemMatHang = this._layDemMatHangRieng(giaodich);
 
-        return Object.keys(count)
-            .reduce<Itemset<T>[]>( (ret: Itemset<T>[], stringifiedItem: string) => {
+        return Object.keys(dem)
+            .reduce<TapMatHang<T>[]>( (ret: TapMatHang<T>[], mathangchuoihoa: string) => {
                 // Returning pruned one-itemsets.
-                if( count[stringifiedItem] >= this._support ) {
-                    let frequentItemset: Itemset<T> = {
-                        support: count[stringifiedItem],
-                        items: [JSON.parse(stringifiedItem)]
+                if( dem[mathangchuoihoa] >= this._hotro ) {
+                    let tapmathangphobien: TapMatHang<T> = {
+                        hotro: dem[mathangchuoihoa],
+                        mathang: [JSON.parse(mathangchuoihoa)]
                     };
-                    ret.push(frequentItemset);
-                    this.emit('data', frequentItemset)
+                    ret.push(tapmathangphobien);
+                    this.emit('data', tapmathangphobien)
                 }
                 return ret;
             }, []);
@@ -103,87 +103,87 @@ export class Apriori<T> extends EventEmitter implements IAprioriEvents<T> {
     /**
      * Returns frequent (k = n+1)-itemsets from a given array of frequent n-itemsets.
      *
-     * @param  {Itemset<T>[]} frequentNItemsets Previously determined n-itemsets.
-     * @return {Itemset<T>[]}                   Frequent k-itemsets.
+     * @param  {TapMatHang<T>[]} tapmathangNphobien Previously determined n-itemsets.
+     * @return {TapMatHang<T>[]}                   Frequent k-itemsets.
      */
-    private getFrequentKItemsets( frequentNItemsets: Itemset<T>[] ): Itemset<T>[] {
+    private layTapMatHangKPhoBien( tapmathangNphobien: TapMatHang<T>[] ): TapMatHang<T>[] {
         // Trivial precondition.
-        if(!frequentNItemsets.length) return [];
+        if(!tapmathangNphobien.length) return [];
 
         // Size of frequent itemsets we want to determine.
-        let k: number = frequentNItemsets[0].items.length + 1;
+        let k: number = tapmathangNphobien[0].mathang.length + 1;
 
         // Get unique items from these itemsets (Brute-force approach).
-        let items: T[] = frequentNItemsets
-            .reduce<T[]>( (items: T[], itemset: Itemset<T>) => items.concat(itemset.items), [])
-            .filter( (item: T, index: number, that: T[]) => that.indexOf(item) === index );
+        let mathang: T[] = tapmathangNphobien
+            .reduce<T[]>( (mathang: T[], tapmathang: TapMatHang<T>) => mathang.concat(tapmathang.mathang), [])
+            .filter( (mathang: T, index: number, that: T[]) => that.indexOf(mathang) === index );
 
         // Generating candidates and counting their occurence.
-        return this._getCandidatesCount( this._generateKCandidates(items,k) )
+        return this._layDemUngVien( this._taoUngVienK(mathang,k) )
             // Pruning candidates.
-            .filter( (itemset: Itemset<T>) => {
-                let isFrequent: boolean = itemset.support >= this._support;
-                if(isFrequent) this.emit('data', itemset);
-                return isFrequent;
+            .filter( (tapmathang: TapMatHang<T>) => {
+                let laphobien: boolean = tapmathang.hotro >= this._hotro;
+                if(laphobien) this.emit('data', tapmathang);
+                return laphobien;
             });
     }
 
     /**
      * Returns all combinations (itemset candidates) of size k from a given set of items.
      *
-     * @param  {T[]}    items The set of items of which you want the combinations.
+     * @param  {T[]}    mathang The set of items of which you want the combinations.
      * @param  {number} k     Size of combinations you want.
-     * @return {Itemset<T>[]} Array of itemset candidates.
+     * @return {TapMatHang<T>[]} Array of itemset candidates.
      */
-    private _generateKCandidates( items: T[], k: number): Itemset<T>[] {
+    private _taoUngVienK( mathang: T[], k: number): TapMatHang<T>[] {
         // Trivial preconditions over k.
-        if(k > items.length || k <= 0) return [];
-        if(k == items.length) return [{items: items, support: 0}];
-        if(k == 1) return items.map( (item: T) => {
-            return { items: [item], support: 0 };
+        if(k > mathang.length || k <= 0) return [];
+        if(k == mathang.length) return [{mathang: mathang, hotro: 0}];
+        if(k == 1) return mathang.map( (mathang: T) => {
+            return { mathang: [mathang], hotro: 0 };
         });
 
-        let ret: Itemset<T>[] = [];
-        for( let i: number = 0; i < items.length - k + 1; i++) {
-            let head: T[] = items.slice(i, i + 1);
-            this._generateKCandidates(items.slice(i + 1), k - 1)
-                .forEach( (tailcomb: Itemset<T>) => ret.push({
-                    items: head.concat(tailcomb.items),
-                    support: 0
+        let ketqua: TapMatHang<T>[] = [];
+        for( let i: number = 0; i < mathang.length - k + 1; i++) {
+            let dau: T[] = mathang.slice(i, i + 1);
+            this._taoUngVienK(mathang.slice(i + 1), k - 1)
+                .forEach( (kethopcuoi: TapMatHang<T>) => ketqua.push({
+                    mathang: dau.concat(kethopcuoi.mathang),
+                    hotro: 0
                 }));
         }
 
-        return ret;
+        return ketqua;
     }
 
     /**
      * Populates an Itemset array with their support in the given set of transactions.
      *
-     * @param  {Itemset<T>[]} candidates The itemset candidates to populate with their support.
-     * @return {Itemset<T>[]}            The support-populated collection of itemsets.
+     * @param  {TapMatHang<T>[]} ungvien The itemset candidates to populate with their support.
+     * @return {TapMatHang<T>[]}            The support-populated collection of itemsets.
      */
-    private _getCandidatesCount( candidates: Itemset<T>[] ): Itemset<T>[] {
-        this._transactions.forEach( (transaction: T[]) => {
-            candidates.forEach( (candidate: Itemset<T>) => {
-                let includesCandidate: boolean = candidate.items.every( (item: T) => transaction.indexOf(item) !== -1 );
-                if(includesCandidate) candidate.support += 1;
+    private _layDemUngVien( ungvien: TapMatHang<T>[] ): TapMatHang<T>[] {
+        this._giaodich.forEach( (giaodich: T[]) => {
+            ungvien.forEach( (ungvien: TapMatHang<T>) => {
+                let baogomsungvien: boolean = ungvien.mathang.every( (mathang: T) => giaodich.indexOf(mathang) !== -1 );
+                if(baogomsungvien) ungvien.hotro += 1;
             })
         });
-        return candidates;
+        return ungvien;
     }
 
     /**
      * Returns the occurence of single items in a given set of transactions.
      *
-     * @param  {T[][]}      transactions The set of transaction.
-     * @return {ItemsCount}              Count of items (stringified items as keys).
+     * @param  {T[][]}      giaodich The set of transaction.
+     * @return {DemMatHang}              Count of items (stringified items as keys).
      */
-    private _getDistinctItemsCount( transactions: T[][] ): ItemsCount {
-        return transactions.reduce<ItemsCount>( (count: ItemsCount, arr: T[]) => {
-            return arr.reduce<ItemsCount>( (count: ItemsCount, item: T) => {
-                count[JSON.stringify(item)] = (count[JSON.stringify(item)] || 0) + 1;
-                return count;
-            }, count);
+    private _layDemMatHangRieng( giaodich: T[][] ): DemMatHang {
+        return giaodich.reduce<DemMatHang>( (dem: DemMatHang, arr: T[]) => {
+            return arr.reduce<DemMatHang>( (dem: DemMatHang, mathang: T) => {
+                dem[JSON.stringify(mathang)] = (dem[JSON.stringify(mathang)] || 0) + 1;
+                return dem;
+            }, dem);
         }, {});
     }
 }
