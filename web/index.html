@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Mining Algorithms</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Add Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
 </head>
 <body>
     <div class="container">
@@ -68,7 +71,7 @@
                 <div id="execution-stats"></div>
             </div>
             
-            <div id="visualization-container" style="display:none;">
+            <!-- <div id="visualization-container" style="display:none;">
                 <h3>Cluster Visualization</h3>
                 <div>
                     <label for="x-axis">X-Axis:</label>
@@ -78,6 +81,23 @@
                     <select id="y-axis"></select>
                 </div>
                 <canvas id="cluster-canvas" width="800" height="500"></canvas>
+                
+                <div id="animation-container">
+                    <h3>Convergence Animation</h3>
+                    <div class="animation-controls">
+                        <button id="play-animation-btn">Play Animation</button>
+                        <button id="pause-animation-btn">Pause</button>
+                        <button id="reset-animation-btn">Reset</button>
+                        <div class="speed-control">
+                            <label for="animation-speed">Speed:</label>
+                            <input type="range" id="animation-speed" min="1" max="10" value="5">
+                        </div>
+                        <span id="iteration-display">Iteration: 0</span>
+                    </div>
+                    <div class="chart-container" style="position: relative; height:500px; width:800px;">
+                        <canvas id="scatter-chart"></canvas>
+                    </div>
+                </div> -->
             </div>
         </div>
     </div>
