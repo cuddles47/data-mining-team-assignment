@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const kmeansParams = document.getElementById('kmeans-params') as HTMLDivElement;
     const kClustersInput = document.getElementById('k-clusters') as HTMLInputElement;
     const maxIterationsInput = document.getElementById('max-iterations') as HTMLInputElement;
-    const useKmeansPPInput = document.getElementById('use-kmeans-pp') as HTMLInputElement;
     const visualizationContainer = document.getElementById('visualization-container') as HTMLDivElement;
     const xAxisSelect = document.getElementById('x-axis') as HTMLSelectElement;
     const yAxisSelect = document.getElementById('y-axis') as HTMLSelectElement;
@@ -185,7 +184,6 @@ document.addEventListener('DOMContentLoaded', () => {
         minConfidenceInput.value = '0.5';
         kClustersInput.value = '3';
         maxIterationsInput.value = '100';
-        useKmeansPPInput.checked = true;
 
         // Clear results
         frequentItemsetsDiv.innerHTML = '';
@@ -481,6 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Parse parameters
             const k = parseInt(kClustersInput.value);
             const maxIterations = parseInt(maxIterationsInput.value);
+            const useKMeansPP = true; // Default value for K-means++ initialization
             
             if (isNaN(k) || k < 2) {
                 alert('Number of clusters must be at least 2');
@@ -532,11 +531,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Convert from Point objects to 2D number array for detailed tracking
             const numericDataPoints = convertPointsToNumericArray(dataPoints);
+            
+            // Add placeholder points as requested to prevent legend overlap
+            // These points won't affect the clustering algorithm, only the visualization bounds
+            const placeholderPoints: Diem[] = [];
+            
+            // Add the specific placeholders requested: (1,1), (2,1), (4,3), (5,4)
+            if (numericDataPoints.length > 0 && numericDataPoints[0].length >= 2) {
+                placeholderPoints.push({ dimension_1: 1, dimension_2: 1 });
+                placeholderPoints.push({ dimension_1: 2, dimension_2: 1 });
+                placeholderPoints.push({ dimension_1: 4, dimension_2: 3 });
+                placeholderPoints.push({ dimension_1: 5, dimension_2: 4 });
+            }
+            
+            const numericPlaceholders = convertPointsToNumericArray(placeholderPoints);
 
-            // Add: Display input data as a table
+            // Add: Display input data as a table (only the real data points, not placeholders)
             displayInputDataTable(numericDataPoints);
 
-            // Initialize and run K-means with detailed tracking
+            // Initialize and run K-means with detailed tracking (using only real data)
             const kmeans = new KMeans(k, maxIterations);
             
             // Run K-means with detailed tracking
@@ -547,7 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const executionTime = endTime - startTime;
 
             // Display results with detailed tracking information
-            displayDetailedKMeansResults(result, executionTime, numericDataPoints);
+            displayDetailedKMeansResults(result, executionTime, numericDataPoints, numericPlaceholders);
 
         } catch (error: any) {
             console.error('Error executing K-means:', error);
@@ -555,7 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function displayDetailedKMeansResults(result: KMeansKetqua, executionTime: number, originalData: number[][]) {
+    function displayDetailedKMeansResults(result: KMeansKetqua, executionTime: number, originalData: number[][], placeholders?: number[][]) {
         // Clear previous results
         frequentItemsetsDiv.innerHTML = '';
         
@@ -815,7 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const detail = document.createElement('div');
                     detail.style.marginBottom = '12px';
                     detail.innerHTML = `
-                        <strong>Đến Tâm cụm ${centroidIdx + 1}:</strong><br>
+                        <strong>Đến tâm cụm ${centroidIdx + 1}:</strong><br>
                         d = √(${steps.join(' + ')}) = √${sumOfSquares.toFixed(4)} = ${distance.toFixed(4)}
                     `;
                     distanceDetails.appendChild(detail);
@@ -838,7 +851,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 distances.forEach((distance, i) => {
                     const listItem = document.createElement('li');
                     listItem.style.marginBottom = '5px';
-                    listItem.textContent = `Khoảng cách đến Tâm cụm ${i + 1}: ${distance.toFixed(4)}`;
+                    listItem.textContent = `Khoảng cách đến tâm cụm ${i + 1}: ${distance.toFixed(4)}`;
                     resultList.appendChild(listItem);
                 });
                 
@@ -1185,6 +1198,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     maxY = Math.max(maxY, point[yDimIndex]);
                 });
                 
+                // Consider placeholder points when calculating bounds
+                if (placeholders && placeholders.length > 0) {
+                    placeholders.forEach(point => {
+                        if (point.length > xDimIndex && point.length > yDimIndex) {
+                            minX = Math.min(minX, point[xDimIndex]);
+                            maxX = Math.max(maxX, point[xDimIndex]);
+                            minY = Math.min(minY, point[yDimIndex]);
+                            maxY = Math.max(maxY, point[yDimIndex]);
+                        }
+                    });
+                }
+                
                 // Add padding
                 const xPadding = (maxX - minX) * 0.1;
                 const yPadding = (maxY - minY) * 0.1;
@@ -1200,8 +1225,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ];
                 
                 // Function to convert data coordinates to canvas coordinates
-                const xToCanvas = (x: number) => ((x - minX) / (maxX - minX)) * canvas.width * 0.9 + canvas.width * 0.05;
-                const yToCanvas = (y: number) => canvas.height - (((y - minY) / (maxY - minY)) * canvas.height * 0.9 + canvas.height * 0.05);
+                const xToCanvas = (x: number) => ((x - minX) / (maxX - minX)) * canvas.width * 0.8 + canvas.width * 0.05;
+                const yToCanvas = (y: number) => canvas.height - (((y - minY) / (maxY - minY)) * canvas.height * 0.8 + canvas.height * 0.05);
                 
                 // Clear canvas
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1271,12 +1296,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     ctx.fillText(`C${idx + 1}`, xToCanvas(centroid[xDimIndex]), yToCanvas(centroid[yDimIndex]) - 12);
                 });
                 
-                // Add legend
-                const legendX = 20;
-                let legendY = 20;
+                // Add legend - Move to top-right and avoid overlapping
+                const legendX = canvas.width - 100;
+                let legendY = 30;
                 
                 ctx.font = '12px Arial';
                 ctx.textAlign = 'left';
+                ctx.fillStyle = '#333';
+                ctx.fillText("Chú thích:", legendX - 30, legendY - 15);
                 
                 iteration.tamcum.forEach((_, idx) => {
                     const color = colors[idx % colors.length];
@@ -1491,6 +1518,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 maxY = Math.max(maxY, point[yDimIndex]);
             });
             
+            // Consider placeholder points when calculating bounds
+            if (placeholders && placeholders.length > 0) {
+                placeholders.forEach(point => {
+                    if (point.length > xDimIndex && point.length > yDimIndex) {
+                        minX = Math.min(minX, point[xDimIndex]);
+                        maxX = Math.max(maxX, point[xDimIndex]);
+                        minY = Math.min(minY, point[yDimIndex]);
+                        maxY = Math.max(maxY, point[yDimIndex]);
+                    }
+                });
+            }
+            
             // Add padding
             const xPadding = (maxX - minX) * 0.1 || 0.1;  // Handle case when all points have same value
             const yPadding = (maxY - minY) * 0.1 || 0.1;
@@ -1506,8 +1545,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ];
             
             // Function to convert data coordinates to canvas coordinates
-            const xToCanvas = (x: number) => ((x - minX) / (maxX - minX)) * finalCanvas.width * 0.85 + finalCanvas.width * 0.1;
-            const yToCanvas = (y: number) => finalCanvas.height - (((y - minY) / (maxY - minY)) * finalCanvas.height * 0.85 + finalCanvas.height * 0.1);
+            const xToCanvas = (x: number) => ((x - minX) / (maxX - minX)) * finalCanvas.width * 0.8 + finalCanvas.width * 0.1;
+            const yToCanvas = (y: number) => finalCanvas.height - (((y - minY) / (maxY - minY)) * finalCanvas.height * 0.8 + finalCanvas.height * 0.1);
             
             // Clear canvas
             ctx.clearRect(0, 0, finalCanvas.width, finalCanvas.height);
@@ -1600,8 +1639,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.fillText(`C${idx + 1}`, xToCanvas(centroid[xDimIndex]), yToCanvas(centroid[yDimIndex]) - 15);
             });
             
-            // Add legend
-            const legendX = finalCanvas.width - 100;
+            // Add legend - move to the top-right corner to avoid overlapping points
+            const legendX = finalCanvas.width - 150; // Further to the left to make room
             let legendY = 30;
             
             ctx.font = '14px Arial';
