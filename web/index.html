@@ -51,12 +51,7 @@
                     <input type="number" id="max-iterations" min="1" value="100">
                 </div>
                 
-                <div class="form-group">
-                    <label for="use-kmeans-pp">
-                        <input type="checkbox" id="use-kmeans-pp" checked>
-                        Use K-means++ Initialization
-                    </label>
-                </div>
+                <!-- Removed the K-means++ checkbox -->
             </div>
             
             <button id="execute-btn">Execute</button>
@@ -71,7 +66,7 @@
                 <div id="execution-stats"></div>
             </div>
             
-            <!-- <div id="visualization-container" style="display:none;">
+            <div id="visualization-container" style="display:none;">
                 <h3>Cluster Visualization</h3>
                 <div>
                     <label for="x-axis">X-Axis:</label>
@@ -97,7 +92,7 @@
                     <div class="chart-container" style="position: relative; height:500px; width:800px;">
                         <canvas id="scatter-chart"></canvas>
                     </div>
-                </div> -->
+                </div>
             </div>
         </div>
     </div>
