@@ -1,7 +1,7 @@
 import { Apriori, IKetQuaApriori } from "../src/apriori";
 import { KMeans, Diem, KMeansKetqua, KMeansLap } from "../src/kmeans_clustering";
+import { fpgrowth } from '../src/fpGrowth';
 declare const Chart: any;
-
 
 document.addEventListener('DOMContentLoaded', () => {
     const transactionsTextarea = document.getElementById('transactions') as HTMLTextAreaElement;
@@ -9,15 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const minConfidenceInput = document.getElementById('min-confidence') as HTMLInputElement;
     const executeButton = document.getElementById('execute-btn') as HTMLButtonElement;
     const importButton = document.getElementById('import-btn') as HTMLButtonElement;
-
     const frequentItemsetsDiv = document.getElementById('frequent-itemsets') as HTMLDivElement;
     const executionStatsDiv = document.getElementById('execution-stats') as HTMLDivElement;
-
+    const confidenceabc = document.getElementById('confidence-group') as HTMLDivElement;
     // K-means specific elements
     const algorithmSelect = document.getElementById('algorithm-select') as HTMLSelectElement;
     const aprioriParams = document.getElementById('apriori-params') as HTMLDivElement;
     const kmeansParams = document.getElementById('kmeans-params') as HTMLDivElement;
-    const confidenceabc = document.getElementById('confidence-group') as HTMLDivElement;
     const kClustersInput = document.getElementById('k-clusters') as HTMLInputElement;
     const maxIterationsInput = document.getElementById('max-iterations') as HTMLInputElement;
     const visualizationContainer = document.getElementById('visualization-container') as HTMLDivElement;
@@ -33,6 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
 A,C
 C,B,A
 A,B`,
+        'fp-Growth': `A,B,C
+A,C
+C,B,A
+A,B`,
         'kmeans':  `1,1
 2,1
 4,3
@@ -44,31 +46,33 @@ A,B`,
 
     // Update placeholder when algorithm changes
     algorithmSelect.addEventListener('change', function () {
-        transactionsTextarea.placeholder = placeholders[this.value];
+        transactionsTextarea.placeholder = placeholders[this.value] || placeholders['apriori'];
     });
 
     // Algorithm selection change handler
     algorithmSelect.addEventListener('change', () => {
         const selectedAlgorithm = algorithmSelect.value;
 
-        if (selectedAlgorithm === 'apriori') {
+        if (selectedAlgorithm === 'apriori' ) {
             aprioriParams.style.display = 'block';
             kmeansParams.style.display = 'none';
-            visualizationContainer.style.display = 'none';
+            if (visualizationContainer) {
+                visualizationContainer.style.display = 'none';
+            }
             inputTitle.textContent = 'Input Transactions';
             inputDescription.textContent = 'Enter each transaction on a new line. Items within a transaction should be separated by commas.';
-            executeButton.textContent = 'Execute Apriori';
-        } else if (selectedAlgorithm === 'kmeans') {
+            executeButton.textContent = selectedAlgorithm === 'apriori' ? 'Execute Apriori' : 'Execute FP-Growth';
+        } else if (selectedAlgorithm === 'kmeans'){
             aprioriParams.style.display = 'none';
             kmeansParams.style.display = 'block';
             inputTitle.textContent = 'Input Data Points';
             inputDescription.textContent = 'Enter each data point on a new line. Values should be numeric and separated by commas.';
             executeButton.textContent = 'Execute K-means';
-        } else {
+        }else{
             aprioriParams.style.display = 'block';
             kmeansParams.style.display = 'none';
             confidenceabc.style.display = 'none';
-            visualizationContainer.style.display = 'none';
+            
             inputTitle.textContent = 'Input Transactions';
             inputDescription.textContent = 'Enter each transaction on a new line. Items within a transaction should be separated by commas.';
             executeButton.textContent = 'Execute FP-Growth';
@@ -240,10 +244,10 @@ A,B`,
         // Execute selected algorithm
         if (algorithmSelect.value === 'apriori') {
             executeApriori(transactionsText);
-        } else if (algorithmSelect.value === 'kmeans') {
-            executeKMeans(transactionsText);
-        } else {
+        } else if (algorithmSelect.value === 'fp-Growth') {
             executeFpGrowth(transactionsText);
+        } else {
+            executeKMeans(transactionsText);
         }
     });
 
@@ -402,203 +406,6 @@ A,B`,
                 console.error('Error executing Apriori:', error);
                 executionStatsDiv.textContent = `Error: ${error.message}`;
             });
-    }
-
-    /**
-     * Converts Point objects to 2D numeric array for K-means processing
-     */
-    function convertPointsToNumericArray(points: Diem[]): number[][] {
-        const result: number[][] = [];
-
-        // Find all unique dimension keys across all points
-        const dimensionKeys = new Set<string>();
-        for (const point of points) {
-            Object.keys(point).forEach(key => dimensionKeys.add(key));
-        }
-
-        // Sort dimension keys to ensure consistent ordering
-        const sortedKeys = Array.from(dimensionKeys).sort();
-
-        // Convert each point to an array of numbers
-        for (const point of points) {
-            const numericPoint: number[] = [];
-            for (const key of sortedKeys) {
-                numericPoint.push(point[key] || 0); // Use 0 for missing dimensions
-            }
-            result.push(numericPoint);
-        }
-
-        return result;
-    }
-
-    /**
-     * Displays the input data as a table for better visualization
-     */
-    function displayInputDataTable(points: number[][]): void {
-        const tableContainer = document.createElement('div');
-        tableContainer.className = 'input-data-table';
-        tableContainer.innerHTML = '<h3>Input Data Points:</h3>';
-
-        const table = document.createElement('table');
-        table.style.width = '100%';
-        table.style.borderCollapse = 'collapse';
-        table.style.margin = '15px 0';
-        table.style.border = '1px solid #ddd';
-
-        // Create header row
-        const thead = document.createElement('thead');
-        const headerRow = document.createElement('tr');
-
-        // Add point ID header
-        const idHeader = document.createElement('th');
-        idHeader.textContent = 'Point';
-        idHeader.style.border = '1px solid #ddd';
-        idHeader.style.padding = '8px';
-        idHeader.style.backgroundColor = '#f2f2f2';
-        headerRow.appendChild(idHeader);
-
-        // Add dimension headers
-        if (points.length > 0) {
-            for (let i = 0; i < points[0].length; i++) {
-                const dimHeader = document.createElement('th');
-                dimHeader.textContent = `Dimension ${i + 1}`;
-                dimHeader.style.border = '1px solid #ddd';
-                dimHeader.style.padding = '8px';
-                dimHeader.style.backgroundColor = '#f2f2f2';
-                headerRow.appendChild(dimHeader);
-            }
-        }
-
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-
-        // Create table body with data points
-        const tbody = document.createElement('tbody');
-
-        points.forEach((point, idx) => {
-            const row = document.createElement('tr');
-
-            // Add point ID
-            const idCell = document.createElement('td');
-            idCell.textContent = `P${idx + 1}`;
-            idCell.style.border = '1px solid #ddd';
-            idCell.style.padding = '8px';
-            row.appendChild(idCell);
-
-            // Add dimension values
-            point.forEach(value => {
-                const valueCell = document.createElement('td');
-                valueCell.textContent = value.toString();
-                valueCell.style.border = '1px solid #ddd';
-                valueCell.style.padding = '8px';
-                row.appendChild(valueCell);
-            });
-
-            tbody.appendChild(row);
-        });
-
-        table.appendChild(tbody);
-        tableContainer.appendChild(table);
-
-        // Add the table to the page
-        const resultsDiv = document.getElementById('frequent-itemsets');
-        if (resultsDiv) {
-            resultsDiv.appendChild(tableContainer);
-        }
-    }
-
-    function executeKMeans(dataText: string) {
-        try {
-            // Parse parameters
-            const k = parseInt(kClustersInput.value);
-            const maxIterations = parseInt(maxIterationsInput.value);
-            const useKMeansPP = true; // Default value for K-means++ initialization
-
-            if (isNaN(k) || k < 2) {
-                alert('Number of clusters must be at least 2');
-                return;
-            }
-
-            if (isNaN(maxIterations) || maxIterations < 1) {
-                alert('Max iterations must be a positive number');
-                return;
-            }
-
-            // Parse data for K-means
-            const dataPoints = parseDataForKMeans(dataText);
-
-            /**
-             * Parses the input data for K-means clustering.
-             * Each line represents a data point, and values are separated by commas.
-             */
-            function parseDataForKMeans(dataText: string): Diem[] {
-                return dataText.split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line)
-                    .map(line => {
-                        const values = line.split(',').map(value => parseFloat(value.trim()));
-                        if (values.some(isNaN)) {
-                            throw new Error('Invalid data point: All values must be numeric.');
-                        }
-                        const point: Diem = {};
-                        values.forEach((value, index) => {
-                            point[`dimension_${index + 1}`] = value;
-                        });
-                        return point;
-                    });
-            }
-
-            if (dataPoints.length === 0) {
-                alert('No valid data points found. Please check your input.');
-                return;
-            }
-
-            // Ensure we have enough data points
-            if (dataPoints.length < k) {
-                alert(`Cannot create ${k} clusters from ${dataPoints.length} data points. Please reduce K or add more data.`);
-                return;
-            }
-
-            // Record start time for performance measurement
-            const startTime = performance.now();
-
-            // Convert from Point objects to 2D number array for detailed tracking
-            const numericDataPoints = convertPointsToNumericArray(dataPoints);
-
-            // Add placeholder points as requested to prevent legend overlap
-            // These points won't affect the clustering algorithm, only the visualization bounds
-            const placeholderPoints: Diem[] = [];
-
-            // Add the specific placeholders requested: (1,1), (2,1), (4,3), (5,4)
-            if (numericDataPoints.length > 0 && numericDataPoints[0].length >= 2) {
-                placeholderPoints.push({ dimension_1: 1, dimension_2: 1 });
-                placeholderPoints.push({ dimension_1: 2, dimension_2: 1 });
-                placeholderPoints.push({ dimension_1: 4, dimension_2: 3 });
-                placeholderPoints.push({ dimension_1: 5, dimension_2: 4 });
-            }
-
-            const numericPlaceholders = convertPointsToNumericArray(placeholderPoints);
-
-            // Add: Display input data as a table (only the real data points, not placeholders)
-            displayInputDataTable(numericDataPoints);
-
-            // Initialize and run K-means with detailed tracking (using only real data)
-            const kmeans = new KMeans(k, maxIterations);
-
-            // Run K-means with detailed tracking
-            const result = kmeans.dichuyenvoidulieu(numericDataPoints);
-
-            // Record end time
-            const endTime = performance.now();
-            const executionTime = endTime - startTime;
-
-            // Display results with detailed tracking information
-            displayDetailedKMeansResults(result, executionTime, numericDataPoints, numericPlaceholders);
-
-        } catch (error: any) {
-            console.error('Error executing K-means:', error);
-            executionStatsDiv.textContent = `Error: ${error.message}`;
-        }
     }
 
     function executeFpGrowth(transactionsText: string) {
@@ -801,36 +608,207 @@ A,B`,
         resultsContainer.appendChild(frequentItemsetsDiv);
     }
 
-    function parseDataForKMeans(dataText: string): Point[] {
-        const lines = dataText.split('\n')
-            .map(line => line.trim())
-            .filter(line => line);
+    /**
+     * Converts Point objects to 2D numeric array for K-means processing
+     */
+    function convertPointsToNumericArray(points: Diem[]): number[][] {
+        const result: number[][] = [];
 
-        const dataPoints: Point[] = [];
-        const headers: string[] = [];
-        let headerCreated = false;
+        // Find all unique dimension keys across all points
+        const dimensionKeys = new Set<string>();
+        for (const point of points) {
+            Object.keys(point).forEach(key => dimensionKeys.add(key));
+        }
 
-        // Process data lines
-        lines.forEach((line, lineIndex) => {
-            // Split the line into values
-            const values = line.split(',').map(val => val.trim());
+        // Sort dimension keys to ensure consistent ordering
+        const sortedKeys = Array.from(dimensionKeys).sort();
 
-            // Create default headers if this is the first line
-            if (!headerCreated) {
-                for (let i = 0; i < values.length; i++) {
-                    // Try to parse as number to see if this is a header row or data row
-                    const parsedValue = parseFloat(values[i]);
-                    if (isNaN(parsedValue)) {
-                        // This is likely a header row
-                        headers.push(values[i]);
-                    } else {
-                        // This is a data row, create default headers
-                        for (let j = 0; j < values.length; j++) {
-                            headers.push(`dimension_${j + 1}`);
+        // Convert each point to an array of numbers
+        for (const point of points) {
+            const numericPoint: number[] = [];
+            for (const key of sortedKeys) {
+                numericPoint.push(point[key] || 0); // Use 0 for missing dimensions
+            }
+            result.push(numericPoint);
+        }
+
+        return result;
+    }
+
+    /**
+     * Displays the input data as a table for better visualization
+     */
+    function displayInputDataTable(points: number[][]): void {
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'input-data-table';
+        tableContainer.innerHTML = '<h3>Input Data Points:</h3>';
+
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.margin = '15px 0';
+        table.style.border = '1px solid #ddd';
+
+        // Create header row
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+
+        // Add point ID header
+        const idHeader = document.createElement('th');
+        idHeader.textContent = 'Point';
+        idHeader.style.border = '1px solid #ddd';
+        idHeader.style.padding = '8px';
+        idHeader.style.backgroundColor = '#f2f2f2';
+        headerRow.appendChild(idHeader);
+
+        // Add dimension headers
+        if (points.length > 0) {
+            for (let i = 0; i < points[0].length; i++) {
+                const dimHeader = document.createElement('th');
+                dimHeader.textContent = `Dimension ${i + 1}`;
+                dimHeader.style.border = '1px solid #ddd';
+                dimHeader.style.padding = '8px';
+                dimHeader.style.backgroundColor = '#f2f2f2';
+                headerRow.appendChild(dimHeader);
+            }
+        }
+
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        // Create table body with data points
+        const tbody = document.createElement('tbody');
+
+        points.forEach((point, idx) => {
+            const row = document.createElement('tr');
+
+            // Add point ID
+            const idCell = document.createElement('td');
+            idCell.textContent = `P${idx + 1}`;
+            idCell.style.border = '1px solid #ddd';
+            idCell.style.padding = '8px';
+            row.appendChild(idCell);
+
+            // Add dimension values
+            point.forEach(value => {
+                const valueCell = document.createElement('td');
+                valueCell.textContent = value.toString();
+                valueCell.style.border = '1px solid #ddd';
+                valueCell.style.padding = '8px';
+                row.appendChild(valueCell);
+            });
+
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        tableContainer.appendChild(table);
+
+        // Add the table to the page
+        const resultsDiv = document.getElementById('frequent-itemsets');
+        if (resultsDiv) {
+            resultsDiv.appendChild(tableContainer);
+        }
+    }
+
+    function executeKMeans(dataText: string) {
+        try {
+            // Parse parameters
+            const k = parseInt(kClustersInput.value);
+            const maxIterations = parseInt(maxIterationsInput.value);
+            const useKMeansPP = true; // Default value for K-means++ initialization
+
+            if (isNaN(k) || k < 2) {
+                alert('Number of clusters must be at least 2');
+                return;
+            }
+
+            if (isNaN(maxIterations) || maxIterations < 1) {
+                alert('Max iterations must be a positive number');
+                return;
+            }
+
+            // Parse data for K-means
+            const dataPoints = parseDataForKMeans(dataText);
+
+            /**
+             * Parses the input data for K-means clustering.
+             * Each line represents a data point, and values are separated by commas.
+             */
+            function parseDataForKMeans(dataText: string): Diem[] {
+                return dataText.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line)
+                    .map(line => {
+                        const values = line.split(',').map(value => parseFloat(value.trim()));
+                        if (values.some(isNaN)) {
+                            throw new Error('Invalid data point: All values must be numeric.');
                         }
-  function displayDetailedKMeansResults(result: KMeansKetqua, executionTime: number, originalData: number[][], placeholders?: number[][]) {
+                        const point: Diem = {};
+                        values.forEach((value, index) => {
+                            point[`dimension_${index + 1}`] = value;
+                        });
+                        return point;
+                    });
+            }
+
+            if (dataPoints.length === 0) {
+                alert('No valid data points found. Please check your input.');
+                return;
+            }
+
+            // Ensure we have enough data points
+            if (dataPoints.length < k) {
+                alert(`Cannot create ${k} clusters from ${dataPoints.length} data points. Please reduce K or add more data.`);
+                return;
+            }
+
+            // Record start time for performance measurement
+            const startTime = performance.now();
+
+            // Convert from Point objects to 2D number array for detailed tracking
+            const numericDataPoints = convertPointsToNumericArray(dataPoints);
+
+            // Add placeholder points as requested to prevent legend overlap
+            // These points won't affect the clustering algorithm, only the visualization bounds
+            const placeholderPoints: Diem[] = [];
+
+            // Add the specific placeholders requested: (1,1), (2,1), (4,3), (5,4)
+            if (numericDataPoints.length > 0 && numericDataPoints[0].length >= 2) {
+                placeholderPoints.push({ dimension_1: 1, dimension_2: 1 });
+                placeholderPoints.push({ dimension_1: 2, dimension_2: 1 });
+                placeholderPoints.push({ dimension_1: 4, dimension_2: 3 });
+                placeholderPoints.push({ dimension_1: 5, dimension_2: 4 });
+            }
+
+            const numericPlaceholders = convertPointsToNumericArray(placeholderPoints);
+
+            // Add: Display input data as a table (only the real data points, not placeholders)
+            displayInputDataTable(numericDataPoints);
+
+            // Initialize and run K-means with detailed tracking (using only real data)
+            const kmeans = new KMeans(k, maxIterations);
+
+            // Run K-means with detailed tracking
+            const result = kmeans.dichuyenvoidulieu(numericDataPoints);
+
+            // Record end time
+            const endTime = performance.now();
+            const executionTime = endTime - startTime;
+
+            // Display results with detailed tracking information
+            displayDetailedKMeansResults(result, executionTime, numericDataPoints, numericPlaceholders);
+
+        } catch (error: any) {
+            console.error('Error executing K-means:', error);
+            executionStatsDiv.textContent = `Error: ${error.message}`;
+        }
+    }
+
+    function displayDetailedKMeansResults(result: KMeansKetqua, executionTime: number, originalData: number[][], placeholders?: number[][]) {
         // Clear previous results
         frequentItemsetsDiv.innerHTML = '';
+
         // Display execution stats
         executionStatsDiv.textContent = `Đã thực hiện K-means với ${result.tamcum.length} cụm trong ${executionTime.toFixed(2)}ms. Số vòng lặp: ${result.solap}`;
 
@@ -1566,6 +1544,7 @@ A,B`,
 
                 iteration.tamcum.forEach((_, idx) => {
                     const color = colors[idx % colors.length];
+
                     ctx.fillStyle = color;
                     ctx.beginPath();
                     ctx.arc(legendX, legendY, 6, 0, Math.PI * 2);
@@ -1575,12 +1554,6 @@ A,B`,
                     ctx.fillText(`Cụm ${idx + 1}`, legendX + 15, legendY + 4);
 
                     legendY += 20;
-
-            // Create merged data with cluster assignments
-            const mergedData: Array<{ point: Point, cluster: number }> = [];
-            clusters.forEach((cluster, i) => {
-                cluster.forEach(point => {
-                    mergedData.push({ point, cluster: i });
                 });
             };
 
@@ -1595,6 +1568,7 @@ A,B`,
                 content.style.display = isVisible ? 'none' : 'block';
                 header.style.backgroundColor = isVisible ? '#f2f2f2' : '#e0e0e0';
             });
+
             accordion.appendChild(header);
             accordion.appendChild(content);
         });
