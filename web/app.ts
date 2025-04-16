@@ -182,6 +182,77 @@ A,B`,
         fileInput.click();
     });
 
+    // Thêm button và dropdown sử dụng data mẫu
+    const sampleDataBtn = document.createElement('button');
+    sampleDataBtn.id = 'sample-data-btn';
+    sampleDataBtn.textContent = 'Sử dụng data mẫu';
+    sampleDataBtn.style.marginLeft = '10px';
+    sampleDataBtn.style.padding = '5px 10px';
+    sampleDataBtn.style.cursor = 'pointer';
+
+    const sampleDropdown = document.createElement('select');
+    sampleDropdown.id = 'sample-data-dropdown';
+    sampleDropdown.style.display = 'none';
+    sampleDropdown.style.marginLeft = '10px';
+    sampleDropdown.style.padding = '5px 10px';
+
+    // Danh sách dataset mẫu (cố định, đồng bộ với thư mục data trên github)
+    const sampleDatasets = [
+        { label: 'Apriori Dataset 1', value: 'data_apriori.csv' },
+        { label: 'Apriori Dataset 2', value: 'data_apriori_2.csv' },
+        { label: 'KMeans Dataset 1', value: 'data_kmeans.csv' },
+        { label: 'KMeans Dataset 2', value: 'data_kmeans_2.csv' },
+        { label: 'FP-Growth Test', value: 'dataTestFpGrowth.csv' },
+        { label: 'Visualize Apriori/FP-Growth', value: 'visualize_apriori&fpgrowth_dataset.txt' },
+        { label: 'Visualize KMeans', value: 'visualize_kmeans_dataset.txt' }
+    ];
+    sampleDatasets.forEach(ds => {
+        const opt = document.createElement('option');
+        opt.value = ds.value;
+        opt.textContent = ds.label;
+        sampleDropdown.appendChild(opt);
+    });
+
+    // Thêm button và dropdown vào DOM (bên cạnh importButton)
+    importButton.parentElement?.insertBefore(sampleDataBtn, importButton.nextSibling);
+    importButton.parentElement?.insertBefore(sampleDropdown, sampleDataBtn.nextSibling);
+
+    // Xử lý sự kiện click button: toggle dropdown
+    sampleDataBtn.addEventListener('click', () => {
+        sampleDropdown.style.display = sampleDropdown.style.display === 'none' ? 'inline-block' : 'none';
+    });
+
+    // Xử lý chọn dataset mẫu
+    sampleDropdown.addEventListener('change', async () => {
+        const selectedFile = sampleDropdown.value;
+        if (!selectedFile) return;
+        // URL public trên github.com
+        const url = `https://github.com/cuddles47/data-mining-team-assignment/data/${selectedFile}`;
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error('Không thể tải file mẫu');
+            let content = await resp.text();
+            // Loại bỏ BOM nếu có
+            if (content.charCodeAt(0) === 0xFEFF) content = content.slice(1);
+            transactionsTextarea.value = content.trim();
+            // Hiển thị thông báo thành công
+            const successMsg = document.createElement('div');
+            successMsg.textContent = `Đã tải data mẫu: ${selectedFile}`;
+            successMsg.style.color = 'green';
+            successMsg.style.marginTop = '10px';
+            successMsg.style.padding = '5px';
+            const prevMsg = document.querySelector('.import-success');
+            if (prevMsg) prevMsg.remove();
+            successMsg.className = 'import-success';
+            document.querySelector('.input-section')?.appendChild(successMsg);
+            setTimeout(() => { successMsg.remove(); }, 3000);
+        } catch (err) {
+            alert('Không thể tải data mẫu!');
+        }
+        sampleDropdown.style.display = 'none';
+    });
+
+
     /**
      * Xác định dấu phân cách CSV (`,`, `;`, `\t`)
      */
