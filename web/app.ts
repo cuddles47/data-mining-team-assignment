@@ -779,7 +779,7 @@ A,B`,
 
             // 3.1 Calculate Euclidean distances
             const distancesDiv = document.createElement('div');
-            distancesDiv.innerHTML = '<h4>Tính khoảng cách Euclid:</h4>';
+            distancesDiv.innerHTML = '<h4>Tính khoảng cách từ các điểm tới các tâm cụm:</h4>';
 
             // Calculate and display distances in a structured table
             const distancesTable = document.createElement('table');
@@ -793,7 +793,7 @@ A,B`,
             const distancesThead = document.createElement('thead');
             const distancesHeaderRow = document.createElement('tr');
 
-            ['Điểm', 'Phép tính khoảng cách Euclid', 'Kết quả khoảng cách', 'Kết luận'].forEach(text => {
+            ['Điểm', 'Phép tính khoảng cách', 'Kết quả khoảng cách', 'Kết luận'].forEach(text => {
                 const th = document.createElement('th');
                 th.textContent = text;
                 th.style.border = '1px solid #ddd';
