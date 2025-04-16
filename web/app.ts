@@ -810,7 +810,7 @@ A,B`,
         frequentItemsetsDiv.innerHTML = '';
 
         // Display execution stats
-        executionStatsDiv.textContent = `Đã thực hiện K-means với ${result.tamcum.length} cụm trong ${executionTime.toFixed(2)}ms. Số vòng lặp: ${result.solap}`;
+        executionStatsDiv.textContent = `Đã thực hiện K-means với ${result.tamcum.length} cụm trong ${executionTime.toFixed(1)}ms. Số vòng lặp: ${result.solap}`;
 
         // Create results container
         const resultsContainer = document.createElement('div');
@@ -873,7 +873,8 @@ A,B`,
             // Data point values
             point.forEach(value => {
                 const valueCell = document.createElement('td');
-                valueCell.textContent = value.toString();
+                // Round to 1 decimal place
+                valueCell.textContent = (Math.round(value * 10) / 10).toFixed(1);
                 valueCell.style.border = '1px solid #ddd';
                 valueCell.style.padding = '10px';
                 valueCell.style.textAlign = 'center';
@@ -942,10 +943,11 @@ A,B`,
             labelCell.style.textAlign = 'center';
             row.appendChild(labelCell);
 
-            // Centroid values
+            // Centroid coordinates
             centroid.forEach(value => {
                 const valueCell = document.createElement('td');
-                valueCell.textContent = value.toFixed(4);
+                // Round to 1 decimal place
+                valueCell.textContent = (Math.round(value * 10) / 10).toFixed(1);
                 valueCell.style.border = '1px solid #ddd';
                 valueCell.style.padding = '10px';
                 valueCell.style.textAlign = 'center';
@@ -1632,7 +1634,8 @@ A,B`,
             // Centroid coordinates
             centroid.forEach(value => {
                 const valueCell = document.createElement('td');
-                valueCell.textContent = value.toFixed(4);
+                // Round to 1 decimal place
+                valueCell.textContent = (Math.round(value * 10) / 10).toFixed(1);
                 valueCell.style.border = '1px solid #ddd';
                 valueCell.style.padding = '10px';
                 valueCell.style.textAlign = 'center';
