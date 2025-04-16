@@ -127,7 +127,8 @@ export class KMeans {
       for (let i = 0; i < diema.length; i++) {
         tong += Math.pow(diema[i] - diemb[i], 2);
       }
-      return Math.sqrt(tong);
+      // Round to 1 decimal place
+      return Math.round(Math.sqrt(tong) * 10) / 10;
     }
     
     /**
@@ -182,7 +183,8 @@ export class KMeans {
         }
         
         for (let d = 0; d < kichthuoc; d++) {
-          tamcum[d] /= nhom.length;
+          // Round to 1 decimal place
+          tamcum[d] = Math.round((tamcum[d] / nhom.length) * 10) / 10;
         }
         
         tamcummoi.push(tamcum);
