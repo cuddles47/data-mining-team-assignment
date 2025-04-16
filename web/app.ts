@@ -226,8 +226,8 @@ A,B`,
     sampleDropdown.addEventListener('change', async () => {
         const selectedFile = sampleDropdown.value;
         if (!selectedFile) return;
-        // URL public trên github.com
-        const url = `https://github.com/cuddles47/data-mining-team-assignment/data/${selectedFile}`;
+        // URL public trên github.io
+        const url = `https://cuddles47.github.io/data-mining-team-assignment/data/${selectedFile}`;
         try {
             const resp = await fetch(url);
             if (!resp.ok) throw new Error('Không thể tải file mẫu');
