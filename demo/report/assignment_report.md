@@ -81,32 +81,95 @@ Trong mã nguồn, thuật toán được triển khai thông qua các bước c
 ### 2. Thuật Toán FP-Growth
 
 #### Khái niệm cơ bản
-FP-Growth (Frequent Pattern Growth) là thuật toán khai thác tập phổ biến không sử dụng phương pháp tạo ứng viên. Thay vào đó, nó sử dụng cấu trúc dữ liệu FP-Tree để lưu trữ thông tin tần suất theo cách nén.
+FP-Growth (Frequent Pattern Growth) là thuật toán khai thác tập mục phổ biến không sử dụng phương pháp tạo ứng viên như Apriori. Thay vào đó, nó sử dụng cấu trúc dữ liệu FP-Tree (Frequent Pattern Tree) để lưu trữ thông tin tần suất xuất hiện của các mục dưới dạng nén, giúp tiết kiệm bộ nhớ và tăng hiệu suất xử lý.
 
 #### Các cấu trúc dữ liệu chính
-- **FPTreeNode**: Đại diện cho một nút trong cây FP-Tree, chứa thông tin về mục, số lần xuất hiện, và các liên kết
-- **FPTree**: Cấu trúc cây chứa gốc và bảng header để truy cập nhanh các nút
+1. **FPTreeNode**: Đại diện cho một nút trong cây FP-Tree, bao gồm:
+   - `item`: Tên của mục (hoặc null cho nút gốc)
+   - `count`: Số lần xuất hiện của mục trong đường dẫn từ gốc đến nút này
+   - `parent`: Liên kết đến nút cha
+   - `children`: Map lưu trữ các nút con, với key là tên mục và value là nút con
+   - `next`: Liên kết đến nút tiếp theo có cùng mục (sử dụng trong bảng header)
+
+2. **FPTree**: Cấu trúc cây FP-Tree, bao gồm:
+   - `root`: Nút gốc của cây
+   - `headerTable`: Bảng header lưu trữ con trỏ đến nút đầu tiên của mỗi mục
+
+#### Kết quả trả về
+Thuật toán trả về một đối tượng phức hợp gồm:
+- `frequentItemsets`: Mảng các tập mục phổ biến và giá trị support của chúng
+- `logs`: Bản ghi quá trình thực thi thuật toán để theo dõi
+- `frequentItemsetsData`: Dữ liệu chi tiết về quá trình khai thác mỗi mục
+- `treeNodes`: Thông tin cấu trúc cây để hiển thị trực quan
 
 #### Luồng thực thi trong mã nguồn
 ```
 Pseudo code FP-Growth:
-1. Quét cơ sở dữ liệu giao dịch để tìm các mục phổ biến và sắp xếp chúng theo tần suất giảm dần
-2. Xây dựng FP-Tree:
+1. Đếm tần suất của mỗi mục trong tất cả các giao dịch
+2. Lọc ra các mục phổ biến (có tần suất ≥ minSupport) và sắp xếp theo tần suất giảm dần
+3. Xây dựng FP-Tree:
    a. Tạo nút gốc
-   b. Với mỗi giao dịch, lọc ra các mục phổ biến, sắp xếp theo tần suất và thêm vào cây
-3. Khai thác tập phổ biến từ FP-Tree:
-   a. Bắt đầu với các mục có tần suất thấp nhất
-   b. Xây dựng cơ sở mẫu có điều kiện (conditional pattern base) cho mỗi mục
-   c. Xây dựng FP-Tree có điều kiện (conditional FP-tree)
-   d. Đệ quy để khai thác các tập phổ biến
+   b. Với mỗi giao dịch, lọc giữ lại các mục phổ biến, sắp xếp theo thứ tự tần suất, và chèn vào cây
+   c. Duy trì bảng header để liên kết các nút có cùng tên mục
+4. Khai thác các tập mục phổ biến từ FP-Tree (hàm mineTree):
+   a. Với mỗi mục trong bảng header (bắt đầu từ mục có tần suất thấp nhất):
+      i. Tính support của mục bằng cách tổng hợp count của tất cả các nút
+      ii. Nếu support ≥ minSupport, tạo tập mục phổ biến bằng cách kết hợp mục hiện tại với các hậu tố (suffix)
+      iii. Xây dựng cơ sở mẫu có điều kiện (conditional pattern base) cho mục hiện tại
+      iv. Tạo FP-Tree có điều kiện (conditional FP-tree) từ cơ sở mẫu
+      v. Gọi đệ quy mineTree với FP-Tree có điều kiện và tập mục đã tìm được
+5. Loại bỏ các tập mục trùng lặp và trả về kết quả
 ```
 
-Trong mã nguồn, cụ thể:
-- Đầu tiên, đếm tần suất của mỗi mục và lọc/sắp xếp theo tần suất
-- Xây dựng cây FP-Tree từ các giao dịch đã lọc
-- Sử dụng phương pháp khai thác đệ quy `mineTree()`
-- Cho mỗi mục, tạo cơ sở mẫu có điều kiện bằng phương thức `getConditionalPatternBase()`
-- Lưu trữ chi tiết quá trình và kết quả trong các mảng `logs` và `frequentItemsetsData`
+Trong mã nguồn thực tế, thuật toán được triển khai theo các bước sau:
+
+1. **Đếm tần suất các mục**:
+   ```typescript
+   const itemSupport: Map<string, number> = new Map();
+   for (const transaction of transactions) {
+       for (const item of transaction) {
+           itemSupport.set(item, (itemSupport.get(item) || 0) + 1);
+       }
+   }
+   ```
+
+2. **Lọc và sắp xếp các mục phổ biến**:
+   ```typescript
+   const frequentItems = Array.from(itemSupport.entries())
+       .filter(([_, count]) => count >= minSupport)
+       .sort((a, b) => {
+           if (b[1] !== a[1]) return b[1] - a[1];
+           return a[0].localeCompare(b[0]);
+       })
+       .map(([item]) => item);
+   ```
+
+3. **Xây dựng FP-Tree từ các giao dịch đã lọc**:
+   ```typescript
+   const tree = new FPTree();
+   for (const transaction of transactions) {
+       const filteredTransaction = transaction
+           .filter(item => frequentItems.includes(item))
+           .sort((a, b) => frequentItems.indexOf(a) - frequentItems.indexOf(b));
+       tree.addTransaction(filteredTransaction);
+   }
+   ```
+
+4. **Khai thác tập mục phổ biến với hàm đệ quy mineTree**:
+   - Lấy các mục theo thứ tự ngược với tần suất ban đầu (tăng dần)
+   - Với mỗi mục, tính support tổng hợp từ các nút trong cây
+   - Nếu support đạt ngưỡng, tạo tập mục phổ biến mới
+   - Xây dựng cơ sở mẫu điều kiện và cây FP-Tree điều kiện
+   - Khai thác đệ quy trên cây điều kiện
+
+5. **Xử lý và ghi nhận kết quả chi tiết**:
+   - Lưu lại quá trình khai thác trong logs
+   - Lưu thông tin chi tiết về cơ sở mẫu điều kiện, cây FP-Tree và các mẫu phổ biến trong frequentItemsetsData
+   - Lưu thông tin về cấu trúc cây để hiển thị trực quan
+
+6. **Xử lý các tổ hợp con và pattern kết hợp**:
+   - Mã nguồn thực tế tạo các tổ hợp con từ mỗi mục để phát hiện ra các pattern con có ý nghĩa
+   - Các tập mục được lọc trùng và đảm bảo mỗi tập chỉ xuất hiện một lần trong kết quả cuối cùng
 
 ### 3. Thuật Toán K-means
 
@@ -152,192 +215,6 @@ Trong mã nguồn, các phương thức chính:
 - **Cấu hình tham số**: Mỗi thuật toán có các tham số riêng để điều chỉnh
 - **Hiển thị kết quả**: Kết quả được hiển thị dưới dạng text trong phần results
 - **Chức năng Reset**: Xóa dữ liệu đã nhập và kết quả
-
-## V. Phân Tích Chi Tiết Các Hàm Quan Trọng
-
-### Thuật toán Apriori
-
-```typescript
-// Hàm thực thi chính của thuật toán
-public thucthi(giaodich: T[][], cb?: (result: IKetQuaApriori<T>) => any): Promise<IKetQuaApriori<T>> {
-    this._giaodich = giaodich;
-    // Chuyển đổi ngưỡng hỗ trợ tương đối thành tuyệt đối
-    this._hotro = Math.ceil(this._hotro * giaodich.length);
-
-    return new Promise<IKetQuaApriori<T>>((resolve, reject) => {
-        let thoigianbatdau = performance.now();
-
-        // Tạo tập mục phổ biến 1-itemsets
-        let tapmathangphobien: TapMatHang<T>[][] = [this.layTapMatHangMotPhoBien(this._giaodich)];
-
-        let i: number = 0;
-        // Tạo tập mục phổ biến (i+1)-itemsets cho đến khi không thể tìm thêm
-        while (tapmathangphobien[i].length > 0) {
-            tapmathangphobien.push(this.layTapMatHangKPhoBien(tapmathangphobien[i]));
-            i++;
-        }
-
-        let thoigianketthuc = performance.now();
-
-        // Định dạng kết quả
-        let ketqua: IKetQuaApriori<T> = {
-            tapmathang: tapmathangphobien.reduce((acc, val) => acc.concat(val), []),
-            thoigianthaotac: Math.round(thoigianketthuc - thoigianbatdau)
-        };
-
-        if(cb) cb(ketqua);
-        resolve(ketqua);
-    });
-}
-```
-
-### Thuật toán FP-Growth
-
-```typescript
-// Hàm chính của thuật toán FP-Growth
-export function fpgrowth(
-    transactions: string[][],
-    minSupport: number
-): {
-    frequentItemsets: { items: string[]; support: number }[],
-    logs: string[],
-    frequentItemsetsData: Array<{
-        x: string;
-        conditionalBase: string[];
-        fpTree: string[];
-        frequentPatterns: string[];
-        support: number;
-    }>,
-    treeNodes: { label: string, depth: number }[]
-} {
-    // Bước 1: Đếm tần suất các mục
-    const itemSupport: Map<string, number> = new Map();
-    for (const transaction of transactions) {
-        for (const item of transaction) {
-            itemSupport.set(item, (itemSupport.get(item) || 0) + 1);
-        }
-    }
-
-    // Bước 2: Lọc và sắp xếp các mục phổ biến theo tần suất giảm dần
-    const frequentItems = Array.from(itemSupport.entries())
-        .filter(([_, count]) => count >= minSupport)
-        .sort((a, b) => {
-            if (b[1] !== a[1]) return b[1] - a[1];
-            return a[0].localeCompare(b[0]);
-        })
-        .map(([item]) => item);
-
-    // Bước 3: Xây dựng FP-Tree từ các giao dịch đã lọc
-    const tree = new FPTree();
-    for (const transaction of transactions) {
-        const filteredTransaction = transaction
-            .filter(item => frequentItems.includes(item))
-            .sort((a, b) => frequentItems.indexOf(a) - frequentItems.indexOf(b));
-        tree.addTransaction(filteredTransaction);
-    }
-
-    // Bước 4: Khai thác các tập mục phổ biến từ FP-Tree
-    // Hàm mineTree đệ quy để khai thác các tập phổ biến
-    function mineTree(tree: FPTree, suffix: string[] = []) {
-        // Lấy các mục trong bảng header theo thứ tự tăng dần tần suất
-        const itemsInTree = frequentItems.filter(item => tree.headerTable.has(item)).reverse();
-
-        for (const item of itemsInTree) {
-            // Tính tổng support
-            let support = 0;
-            let node: FPTreeNode | undefined = tree.headerTable.get(item);
-            while (node) {
-                support += node.count;
-                node = node.next;
-            }
-
-            if (support >= minSupport) {
-                // Tạo tập mục phổ biến mới bằng cách kết hợp item và suffix
-                const newItemset = [item, ...suffix];
-                frequentItemsets.push({ items: newItemset, support });
-
-                // Tạo cơ sở mẫu điều kiện
-                const conditionalPatternBase = tree.getConditionalPatternBase(item);
-
-                // Tạo FP-Tree điều kiện
-                const conditionalTree = new FPTree();
-                for (const { pattern, count } of conditionalPatternBase) {
-                    conditionalTree.addTransaction(pattern, count);
-                }
-
-                // Đệ quy khai thác FP-Tree điều kiện nếu không rỗng
-                if (conditionalTree.root.children.size > 0) {
-                    mineTree(conditionalTree, newItemset);
-                }
-            }
-        }
-    }
-}
-```
-
-### Thuật toán K-means
-
-```typescript
-// Hàm chính của thuật toán K-means
-dichuyenvoidulieu(dulieu: number[][]): KMeansKetqua {
-    if (dulieu.length < this.k) {
-        throw new Error(`Cannot cluster ${dulieu.length} points into ${this.k} clusters`);
-    }
-    
-    // Khởi tạo tâm cụm ngẫu nhiên
-    let tamcum = this.khoitaotamcumngaunhien(dulieu);
-    
-    // Xóa thông tin chi tiết các lần lặp trước
-    this.chitietlap = [];
-    
-    // Quá trình lặp
-    let lap = 0;
-    let tamcumthaydoi = true;
-    let phancum: number[] = [];
-    let cumcuoicung: number[][][] = [];
-    
-    while (tamcumthaydoi && lap < this.solaptoida) {
-        // Tính ma trận khoảng cách (ma trận D)
-        const bangkhoangcach: number[][] = [];
-        for (let i = 0; i < dulieu.length; i++) {
-            bangkhoangcach[i] = [];
-            for (let j = 0; j < tamcum.length; j++) {
-                bangkhoangcach[i][j] = this.khoangcacheuclidean(dulieu[i], tamcum[j]);
-            }
-        }
-        
-        // Gán mỗi điểm vào cụm gần nhất
-        phancum = this.ganvaocum(bangkhoangcach);
-        
-        // Nhóm các điểm theo cụm
-        const diemtheocum: number[][][] = Array(this.k).fill(null).map(() => []);
-        for (let i = 0; i < dulieu.length; i++) {
-            diemtheocum[phancum[i]].push(dulieu[i]);
-        }
-        
-        // Lưu thông tin chi tiết của lần lặp hiện tại
-        this.chitietlap.push({
-            bangkhoangcach,
-            tamcum: [...tamcum],
-            phancum: [...phancum],
-        });
-        
-        // Tính tâm cụm mới (ma trận G)
-        const tamcummoi = this.tinhtamcummoi(diemtheocum);
-        
-        // Kiểm tra xem tâm cụm có thay đổi không
-        tamcumthaydoi = this.kiemtratamcumthaydoi(tamcum, tamcummoi);
-        
-        // Cập nhật tâm cụm cho lần lặp tiếp theo
-        tamcum = [...tamcummoi];
-        
-        // Lưu cụm cho lần lặp cuối cùng
-        cumcuoicung = [...diemtheocum];
-        
-        lap++;
-    }
-}
-```
 
 ## VI. Kết Luận
 
