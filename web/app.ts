@@ -1058,7 +1058,8 @@ A,B`,
                         const squaredDiff = diff * diff;
                         sumOfSquares += squaredDiff;
 
-                        steps.push(`(${point[dim]} - ${centroid[dim].toFixed(4)})² = ${squaredDiff.toFixed(4)}`);
+                        // Round to 1 decimal place for display
+                        steps.push(`(${(Math.round(point[dim] * 10) / 10).toFixed(1)} - ${(Math.round(centroid[dim] * 10) / 10).toFixed(1)})² = ${(Math.round(squaredDiff * 10) / 10).toFixed(1)}`);
                     }
 
                     const distance = Math.sqrt(sumOfSquares);
@@ -1068,7 +1069,7 @@ A,B`,
                     detail.style.marginBottom = '12px';
                     detail.innerHTML = `
                         <strong>Đến tâm cụm ${centroidIdx + 1}:</strong><br>
-                        d = √(${steps.join(' + ')}) = √${sumOfSquares.toFixed(4)} = ${distance.toFixed(4)}
+                        d = √(${steps.join(' + ')}) = √${(Math.round(sumOfSquares * 10) / 10).toFixed(1)} = ${(Math.round(distance * 10) / 10).toFixed(1)}
                     `;
                     distanceDetails.appendChild(detail);
                 });
@@ -1090,7 +1091,8 @@ A,B`,
                 distances.forEach((distance, i) => {
                     const listItem = document.createElement('li');
                     listItem.style.marginBottom = '5px';
-                    listItem.textContent = `Khoảng cách đến tâm cụm ${i + 1}: ${distance.toFixed(4)}`;
+                    // Round to 1 decimal place
+                    listItem.textContent = `Khoảng cách đến tâm cụm ${i + 1}: ${(Math.round(distance * 10) / 10).toFixed(1)}`;
                     resultList.appendChild(listItem);
                 });
 
@@ -1117,9 +1119,9 @@ A,B`,
                 distances.forEach((distance, i) => {
                     const listItem = document.createElement('li');
                     if (i === minIndex) {
-                        listItem.innerHTML = `<strong style="color: green;">Khoảng cách đến Tâm cụm ${i + 1} = ${distance.toFixed(4)} (nhỏ nhất)</strong>`;
+                        listItem.innerHTML = `<strong style="color: green;">Khoảng cách đến Tâm cụm ${i + 1} = ${(Math.round(distance * 10) / 10).toFixed(1)} (nhỏ nhất)</strong>`;
                     } else {
-                        listItem.innerHTML = `Khoảng cách đến Tâm cụm ${i + 1} = ${distance.toFixed(4)} > ${minDistance.toFixed(4)}`;
+                        listItem.innerHTML = `Khoảng cách đến Tâm cụm ${i + 1} = ${(Math.round(distance * 10) / 10).toFixed(1)} > ${(Math.round(minDistance * 10) / 10).toFixed(1)}`;
                     }
                     comparisonList.appendChild(listItem);
                 });
