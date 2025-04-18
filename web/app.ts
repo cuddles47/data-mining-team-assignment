@@ -210,6 +210,7 @@ A,B`,
     }
 
     const resetTextareaButton = document.getElementById('reset-textarea-btn') as HTMLButtonElement;
+    const sampleDataButton = document.getElementById('sample-data-btn') as HTMLButtonElement;
 
     // Reset button event handler
     resetTextareaButton.addEventListener('click', () => {
@@ -228,6 +229,34 @@ A,B`,
         // Reset visualization axes selects
         xAxisSelect.innerHTML = '';
         yAxisSelect.innerHTML = '';
+    });
+    
+    // Sample data button event handler
+    sampleDataButton.addEventListener('click', () => {
+        const selectedAlgorithm = algorithmSelect.value;
+        // Load algorithm-specific sample data
+        transactionsTextarea.value = placeholders[selectedAlgorithm] || '';
+        
+        // Show success message
+        const successMsg = document.createElement('div');
+        successMsg.textContent = `Sample data loaded for ${selectedAlgorithm === 'apriori' ? 'Apriori' : 
+                                  selectedAlgorithm === 'fp-Growth' ? 'FP-Growth' : 
+                                  'K-means Clustering'}`;
+        successMsg.style.color = 'green';
+        successMsg.style.marginTop = '10px';
+        successMsg.style.padding = '5px';
+
+        // Remove previous success messages
+        const prevMsg = document.querySelector('.sample-data-success');
+        if (prevMsg) prevMsg.remove();
+
+        successMsg.className = 'sample-data-success';
+        document.querySelector('.input-section')?.appendChild(successMsg);
+
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            successMsg.remove();
+        }, 3000);
     });
 
     executeButton.addEventListener('click', () => {
