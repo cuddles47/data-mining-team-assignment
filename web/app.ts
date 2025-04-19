@@ -217,7 +217,7 @@ A,B`,
         // Clear textarea and input fields
         transactionsTextarea.value = '';
         supportInput.value = '0.5';
-        minConfidenceInput.value = '0.5';
+        minConfidenceInput.value = '0.2';
         kClustersInput.value = '3';
         maxIterationsInput.value = '100';
 
