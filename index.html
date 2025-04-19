@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Mining Algorithms</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Add Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Data Mining Algorithms</h1>
+        
+        <div class="algorithm-selection">
+            <div class="form-group">
+                <label for="algorithm-select">Select Algorithm:</label>
+                <select id="algorithm-select">
+                    <option value="apriori">Apriori Algorithm</option>
+                    <option value="fp-Growth">FP Growth Algorithm</option>
+                    <option value="kmeans">K-means Clustering</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="input-section">
+            <h2 id="input-title">Input Transactions</h2>
+            <p id="input-description">Enter each transaction on a new line. Items within a transaction should be separated by commas.</p>
+            <textarea id="transactions" rows="10" placeholder="A,B,C
+A,C
+C,B,A
+A,B"></textarea>
+            
+            <div id="apriori-params">
+                <div class="form-group">
+                    <label for="support">Minimum Support (0-1):</label>
+                    <input type="number" id="support" min="0" max="1" step="0.1" value="0.5">
+                </div>
+
+                <div class="form-group" id="confidence-group">
+                    <label for="min-confidence">Minimum Confidence (0-1):</label>
+                    <input type="number" id="min-confidence" min="0" max="1" step="0.1" value="0.2">
+                </div>
+            </div>
+            
+            <div id="kmeans-params" style="display:none;">
+                <div class="form-group">
+                    <label for="k-clusters">Number of Clusters (K):</label>
+                    <input type="number" id="k-clusters" min="2" value="3">
+                </div>
+                
+                <div class="form-group">
+                    <label for="max-iterations">Max Iterations:</label>
+                    <input type="number" id="max-iterations" min="1" value="100">
+                </div>
+                
+                <!-- Removed the K-means++ checkbox -->
+            </div>
+            
+            <button id="execute-btn">Execute</button>
+            
+            <button id="reset-textarea-btn">Reset</button>
+            <button id="import-btn">Import File</button>
+            <button id="sample-data-btn">Sample Data</button>
+        </div>
+        
+        <div class="results-section">
+            <h2>Results</h2>
+            <div id="results-container">
+                <div id="frequent-itemsets"></div>
+                <div id="execution-stats"></div>
+            </div>
+            
+            <!-- <div id="visualization-container" style="display:none;">
+                <h3>Cluster Visualization</h3>
+                <div>
+                    <label for="x-axis">X-Axis:</label>
+                    <select id="x-axis"></select>
+                    
+                    <label for="y-axis">Y-Axis:</label>
+                    <select id="y-axis"></select>
+                </div>
+                <canvas id="cluster-canvas" width="800" height="500"></canvas>
+                
+                <div id="animation-container">
+                    <h3>Convergence Animation</h3>
+                    <div class="animation-controls">
+                        <button id="play-animation-btn">Play Animation</button>
+                        <button id="pause-animation-btn">Pause</button>
+                        <button id="reset-animation-btn">Reset</button>
+                        <div class="speed-control">
+                            <label for="animation-speed">Speed:</label>
+                            <input type="range" id="animation-speed" min="1" max="10" value="5">
+                        </div>
+                        <span id="iteration-display">Iteration: 0</span>
+                    </div>
+                    <div class="chart-container" style="position: relative; height:500px; width:800px;">
+                        <canvas id="scatter-chart"></canvas>
+                    </div>
+                </div>
+            </div> -->
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
