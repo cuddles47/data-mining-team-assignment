@@ -10,6 +10,8 @@ Mục tiêu chính của dự án là xây dựng một ứng dụng web cho ph�
 - Nhập dữ liệu và cấu hình các tham số thuật toán
 - Thực thi các thuật toán khai phá dữ liệu
 - Hiển thị kết quả dưới dạng trực quan
+- Cung cấp giao diện tương tác thân thiện với người dùng
+- Trực quan hóa từng bước thực hiện của thuật toán
 
 ## II. Cấu Trúc Dự Án
 
@@ -22,9 +24,10 @@ data-mining-team-assignment/
 │   ├── fpGrowth.ts     # Triển khai thuật toán FP-Growth
 │   ├── kmeans_clustering.ts # Triển khai thuật toán K-means
 ├── web/                # Giao diện người dùng web
-│   ├── app.ts/js       # Logic xử lý giao diện
+│   ├── app.ts          # Logic xử lý giao diện và tương tác
 │   ├── index.html      # Cấu trúc HTML của ứng dụng
 │   ├── styles.css      # Định dạng CSS cho ứng dụng
+│   ├── data/           # Tài nguyên web cần thiết
 ├── data/               # Dữ liệu mẫu cho kiểm thử
 │   ├── data_apriori.csv        # Dữ liệu mẫu cho Apriori
 │   ├── data_apriori_2.csv      # Bộ dữ liệu mẫu thứ hai cho Apriori
@@ -47,6 +50,50 @@ data-mining-team-assignment/
 ├── tsconfig.json       # Cấu hình TypeScript
 └── webpack.config.js   # Cấu hình webpack để đóng gói mã nguồn
 ```
+
+### Kiến trúc Ứng Dụng
+
+Ứng dụng được xây dựng theo mô hình kiến trúc module, với sự phân tách rõ ràng giữa giao diện người dùng và logic của thuật toán:
+
+1. **Tầng Thuật Toán (src/)**: Chứa triển khai thuần túy của các thuật toán khai phá dữ liệu
+   - Mỗi thuật toán được đóng gói trong module riêng biệt
+   - Các module này không phụ thuộc vào giao diện người dùng
+
+2. **Tầng UI (web/)**: Giao diện người dùng web
+   - Cấu trúc HTML được định nghĩa trong index.html
+   - Logic tương tác UI được triển khai trong app.ts
+   - Định dạng và kiểu hiển thị được quản lý trong styles.css
+
+3. **Tầng Đóng Gói (webpack.config.js)**: 
+   - Cấu hình webpack để đóng gói mã nguồn TypeScript thành JavaScript
+   - Tối ưu hóa kích thước và hiệu suất của ứng dụng
+
+#### Mối Quan Hệ Giữa index.html và app.ts
+
+Hai file này có mối quan hệ quan trọng trong kiến trúc ứng dụng:
+
+1. **index.html**:
+   - Xác định cấu trúc DOM của ứng dụng
+   - Chứa các phần tử UI như buttons, dropdowns, text areas
+   - Cung cấp các container để hiển thị kết quả và trực quan hóa
+   - Liên kết đến các tài nguyên CSS và script JavaScript
+   - Là điểm khởi đầu khi người dùng truy cập ứng dụng
+
+2. **app.ts**:
+   - Chứa logic xử lý tương tác người dùng
+   - Khởi tạo và gọi các thuật toán khai phá
+   - Xử lý sự kiện như nhấn nút, thay đổi dropdown, nhập dữ liệu
+   - Cập nhật DOM để hiển thị kết quả sau khi thực thi thuật toán
+   - Triển khai logic trực quan hóa kết quả
+
+3. **Quy trình hoạt động**:
+   - Khi người dùng truy cập ứng dụng, trình duyệt tải file index.html
+   - TypeScript compiler biên dịch file app.ts thành JavaScript
+   - File JavaScript được liên kết trong index.html thông qua thẻ script
+   - JavaScript thiết lập các trình xử lý sự kiện cho các phần tử UI
+   - Khi người dùng tương tác, các hàm xử lý trong app.ts được kích hoạt
+   - Các thuật toán trong src/ được gọi để xử lý dữ liệu
+   - Kết quả được hiển thị bằng cách cập nhật DOM
 
 ## III. Chi Tiết Các Thuật Toán
 
@@ -152,6 +199,41 @@ Trong mã nguồn, các phương thức chính:
 - **Cấu hình tham số**: Mỗi thuật toán có các tham số riêng để điều chỉnh
 - **Hiển thị kết quả**: Kết quả được hiển thị dưới dạng text trong phần results
 - **Chức năng Reset**: Xóa dữ liệu đã nhập và kết quả
+
+### Trực quan hóa kết quả
+
+Ứng dụng cung cấp các tính năng trực quan hóa để giúp người dùng hiểu rõ hơn về kết quả:
+
+1. **Trực quan hóa thuật toán Apriori**:
+   - Bảng hiển thị tần suất xuất hiện của mỗi mục
+   - Danh sách các tập phổ biến theo kích thước
+   - Biểu đồ các luật kết hợp với chỉ số support và confidence
+
+2. **Trực quan hóa FP-Growth**:
+   - Hiển thị cấu trúc FP-Tree với các nút và liên kết
+   - Bảng quá trình tạo tập phổ biến theo từng bước
+   - Chi tiết về cơ sở mẫu có điều kiện và cây FP điều kiện
+
+3. **Trực quan hóa K-means**:
+   - Biểu đồ phân tán 2D cho các điểm dữ liệu và tâm cụm
+   - Màu sắc khác nhau để phân biệt các cụm
+   - Hiển thị quá trình hội tụ qua từng vòng lặp
+   - Bảng ma trận khoảng cách từ điểm đến tâm cụm
+
+### Xử lý dữ liệu
+
+Ứng dụng hỗ trợ nhiều định dạng dữ liệu và cung cấp công cụ xử lý:
+
+1. **Nhập dữ liệu**:
+   - Hỗ trợ nhập trực tiếp qua textarea
+   - Import từ file CSV hoặc TSV
+   - Tự động phát hiện dấu phân cách (comma, tab, semicolon)
+   - Dữ liệu mẫu có sẵn cho mỗi thuật toán
+
+2. **Tiền xử lý dữ liệu**:
+   - Loại bỏ các dòng trống hoặc không hợp lệ
+   - Chuyển đổi định dạng phù hợp với từng thuật toán
+   - Chuẩn hóa dữ liệu cho K-means nếu cần
 
 ## V. Phân Tích Chi Tiết Các Hàm Quan Trọng
 
@@ -339,14 +421,61 @@ dichuyenvoidulieu(dulieu: number[][]): KMeansKetqua {
 }
 ```
 
-## VI. Kết Luận
+## VI. Trực quan hóa và giao diện người dùng
+
+### Thiết kế giao diện
+
+Giao diện người dùng được thiết kế tập trung vào tính dễ sử dụng và trực quan:
+
+1. **Bố cục chung**:
+   - Layout dạng cột, chia thành các phần rõ ràng
+   - Phần cấu hình và nhập dữ liệu ở phía trên
+   - Phần kết quả và trực quan hóa ở phía dưới
+   - Responsive design cho các kích thước màn hình khác nhau
+
+2. **Thành phần UI chính**:
+   - Dropdown chọn thuật toán
+   - Textarea nhập dữ liệu
+   - Input điều chỉnh tham số
+   - Các nút chức năng (Execute, Reset, Import)
+   - Khu vực hiển thị kết quả
+
+3. **Trải nghiệm người dùng**:
+   - Thay đổi giao diện động dựa trên thuật toán được chọn
+   - Hiển thị phản hồi tức thì khi tham số thay đổi
+   - Thời gian thực thi được hiển thị để so sánh hiệu suất
+
+### Kỹ thuật trực quan hóa
+
+Ứng dụng sử dụng nhiều kỹ thuật trực quan hóa để hiển thị kết quả:
+
+1. **HTML Canvas**:
+   - Vẽ biểu đồ phân tán cho K-means
+   - Hiển thị cây FP-Tree cho FP-Growth
+   - Cập nhật động theo thời gian thực khi thuật toán chạy
+
+2. **DOM Manipulation**:
+   - Tạo bảng động để hiển thị kết quả chi tiết
+   - Cập nhật nội dung hiển thị theo từng bước thuật toán
+   - Tô màu và định dạng để làm nổi bật thông tin quan trọng
+
+3. **Kỹ thuật hiển thị nâng cao**:
+   - Hiển thị dữ liệu đa chiều thông qua phép chiếu 2D
+   - Cho phép người dùng chọn các chiều dữ liệu để hiển thị
+   - Tương tác với biểu đồ để khám phá dữ liệu chi tiết
+
+## VII. Kết Luận
 
 Dự án "Data Mining Team Assignment" là một ứng dụng web giáo dục cung cấp các công cụ khai phá dữ liệu thông qua ba thuật toán phổ biến: Apriori, FP-Growth và K-means Clustering. Dự án đã được triển khai bằng TypeScript với giao diện web đơn giản và trực quan, cho phép người dùng tương tác với các thuật toán, nhập dữ liệu và xem kết quả.
 
 Mỗi thuật toán đều được triển khai theo đúng các nguyên lý và bước thực hiện tiêu chuẩn, kèm theo các cải tiến để hiển thị chi tiết quá trình thực thi giúp người dùng hiểu rõ hơn về cách hoạt động của thuật toán. Việc lưu trữ chi tiết từng bước thực hiện của thuật toán không chỉ giúp người dùng hiểu rõ về thuật toán mà còn tạo cơ sở cho việc trực quan hóa quy trình khai phá dữ liệu.
+
+Kiến trúc ứng dụng được thiết kế theo mô hình module, phân tách rõ ràng giữa logic thuật toán và giao diện người dùng, giúp dễ dàng mở rộng và bảo trì trong tương lai. Mối quan hệ giữa các thành phần như index.html và app.ts đã được thiết kế hợp lý, tạo nên một luồng hoạt động mượt mà và hiệu quả.
 
 Dự án này có thể được phát triển thêm trong tương lai với các tính năng như:
 1. Thêm nhiều thuật toán khai phá dữ liệu khác
 2. Cải thiện giao diện trực quan hóa kết quả
 3. Tối ưu hóa hiệu suất cho tập dữ liệu lớn
 4. Thêm khả năng xuất kết quả dưới nhiều định dạng khác nhau
+5. Tích hợp các công cụ phân tích và so sánh kết quả giữa các thuật toán
+6. Phát triển phiên bản di động hoặc ứng dụng máy tính để bàn
